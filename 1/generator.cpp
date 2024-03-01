@@ -78,6 +78,8 @@ bool plane(double length, int divisions, char* filename)
             pointList.emplace_back(p1.str());
             pointList.emplace_back(p2.str());
             pointList.emplace_back(p3.str());
+            pointList.emplace_back(p1.str());
+            pointList.emplace_back(p3.str());
             pointList.emplace_back(p4.str());
 
             x = xMin;
