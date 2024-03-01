@@ -33,7 +33,8 @@ bool saveFile(char* filename, const std::list<std::string>& points, const std::s
         printf("There was a problem with the file.");
         return false;
     }
-    file << name << "\n";
+    if (!name.empty())
+        file << name << "\n";
     for(const std::string& s : points)
     {
         file << s << "\n";
@@ -46,9 +47,8 @@ void planeNextPoint(int rowsCalculated, double halfLength, double divisionSize, 
 {
     // Z = Metade da largura do quadrado menos a altura das linhas já calculadas
     nextZ = halfLength - (divisionSize * rowsCalculated);
-
-    //Pitágoras
-    nextX = sqrt(pow(halfLength, 2) * pow(abs(nextZ), 2));
+    
+    nextX = halfLength;
 }
 
 //Calcula pontos para um plano
@@ -75,12 +75,13 @@ bool plane(double length, int divisions, char* filename)
             p3 << xMin << " 0 " << zMin;
             p4 << x << " 0 " << zMin;
 
-            pointList.emplace_back(p1.str());
             pointList.emplace_back(p2.str());
             pointList.emplace_back(p3.str());
             pointList.emplace_back(p1.str());
+
             pointList.emplace_back(p3.str());
             pointList.emplace_back(p4.str());
+            pointList.emplace_back(p1.str());
 
             x = xMin;
         }
