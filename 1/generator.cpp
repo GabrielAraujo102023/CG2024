@@ -11,6 +11,7 @@
 #include <fstream>
 #include <list>
 #include <sstream>
+#include <cmath>
 
 void printArgumentError()
 {
@@ -146,7 +147,7 @@ bool plane(double length, int divisions, const std::string& constant, char* file
     double divisionSize = length / divisions;
     //Metade da largura do plano, para calcular teorema de pitágoras
     double halfLength = length / 2;
-    //Pontos X e Z. Valor inicial é o canto superior direito do plano
+    //Pontos nao constantes do plano. Valor inicial é o canto superior direito do plano
     double a = halfLength, b = halfLength;
     while(rowsCalculated < divisions)
     {
@@ -161,6 +162,7 @@ bool plane(double length, int divisions, const std::string& constant, char* file
     return saveFile(filename, pointList, firstLine, append);
 }
 
+//Calcula planos para uma caixa
 void box(double length, int divisions, char* filename)
 {
     double halfLength = length / 2;
@@ -184,6 +186,71 @@ void box(double length, int divisions, char* filename)
     constant.str("");
     constant << " " << "-" << halfLength;
     plane(length, divisions, constant.str(), filename, "", true, 'z');
+}
+
+void sphere(double radius, int slices, int stacks, char* filename)
+{
+    std::list<std::string> pointList = {};
+    std::stringstream p;
+    double phi1, phi2, theta1, theta2;
+    double x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4;
+    for (int i = 0; i < stacks; ++i) {
+        phi1 = (i * M_PI) / stacks;
+        phi2 = ((i + 1) * M_PI) / stacks;
+
+        for (int j = 0; j < slices; ++j) {
+            theta1 = j * 2 * M_PI / slices;
+            theta2 = (j + 1) * 2 * M_PI / slices;
+
+            // Vertices
+            // Vertex 1
+            x1 = radius * sin(phi1) * cos(theta1);
+            y1 = radius * cos(phi1);
+            z1 = radius * sin(phi1) * sin(theta1);
+
+            // Vertex 2
+            x2 = radius * sin(phi2) * cos(theta1);
+            y2 = radius * cos(phi2);
+            z2 = radius * sin(phi2) * sin(theta1);
+
+            // Vertex 3
+            x3 = radius * sin(phi1) * cos(theta2);
+            y3 = radius * cos(phi1);
+            z3 = radius * sin(phi1) * sin(theta2);
+
+            // Vertex 4
+            x4 = radius * sin(phi2) * cos(theta2);
+            y4 = radius * cos(phi2);
+            z4 = radius * sin(phi2) * sin(theta2);
+
+            // Triangle 1
+            p << x1 << " " << y1 << " " << z1;
+            pointList.emplace_back(p.str());
+            p.str("");
+
+            p << x2 << " " << y2 << " " << z2;
+            pointList.emplace_back(p.str());
+            p.str("");
+
+            p << x3 << " " << y3 << " " << z3;
+            pointList.emplace_back(p.str());
+            p.str("");
+
+            // Triangle 2
+            p << x2 << " " << y2 << " " << z2;
+            pointList.emplace_back(p.str());
+            p.str("");
+
+            p << x4 << " " << y4 << " " << z4;
+            pointList.emplace_back(p.str());
+            p.str("");
+
+            p << x3 << " " << y3 << " " << z3;
+            pointList.emplace_back(p.str());
+            p.str("");
+        }
+    }
+    saveFile(filename, pointList, "sphere", false);
 }
 
 int main(int argc, char* argv[])
@@ -211,5 +278,19 @@ int main(int argc, char* argv[])
             return 0;
         }
         box(std::stod(argv[2]), std::stoi(argv[3]), argv[4]);
+    }
+    else if (std::strcmp(argv[1], "sphere") == 0)
+    {
+        if(argc != 6)
+        {
+            printArgumentError();
+            return 0;
+        }
+        sphere(std::stod(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5]);
+    }
+    else
+    {
+        printArgumentError();
+        return 0;
     }
 }
