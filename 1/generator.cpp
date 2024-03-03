@@ -16,15 +16,17 @@
 void printArgumentError()
 {
     printf("Possible arguments:\n\t"
-           "\uF0B7Plane, X and Z\n"
-           "\uF0B7 Box, dimension, and the number of divisions per edge\n"
-           "\uF0B7 Sphere, radius, slices and stacks\n"
-           "\uF0B7 Cone, bottom radius, height, slices and stacks\n"
+           "- Plane, X and Z\n\t"
+           "- Box, dimension, and the number of divisions per edge\n\t"
+           "- Sphere, radius, slices and stacks\n\t"
+           "- Cone, bottom radius, height, slices and stacks\n"
            "And the resulting file");
 }
 
 //Guarda os pontos num ficheiro
 //Pontos devem vir dentro de uma lista de strings assim --> "x y z"
+//name é o texto que vai ser escrito na primeira linha
+//append é um bool a dizer se o ficheiro é para ser escrito do 0 ou appended
 bool saveFile(char* filename, const std::list<std::string>& points, const std::string& name, bool append)
 {
     std::ofstream file;
@@ -202,28 +204,24 @@ void sphere(double radius, int slices, int stacks, char* filename)
             theta1 = j * 2 * M_PI / slices;
             theta2 = (j + 1) * 2 * M_PI / slices;
 
-            // Vertices
-            // Vertex 1
+            // Pontos
             x1 = radius * sin(phi1) * cos(theta1);
             y1 = radius * cos(phi1);
             z1 = radius * sin(phi1) * sin(theta1);
 
-            // Vertex 2
             x2 = radius * sin(phi2) * cos(theta1);
             y2 = radius * cos(phi2);
             z2 = radius * sin(phi2) * sin(theta1);
 
-            // Vertex 3
             x3 = radius * sin(phi1) * cos(theta2);
             y3 = radius * cos(phi1);
             z3 = radius * sin(phi1) * sin(theta2);
 
-            // Vertex 4
             x4 = radius * sin(phi2) * cos(theta2);
             y4 = radius * cos(phi2);
             z4 = radius * sin(phi2) * sin(theta2);
 
-            // Triangle 1
+            // Triângulos
             p << x1 << " " << y1 << " " << z1;
             pointList.emplace_back(p.str());
             p.str("");
@@ -236,7 +234,6 @@ void sphere(double radius, int slices, int stacks, char* filename)
             pointList.emplace_back(p.str());
             p.str("");
 
-            // Triangle 2
             p << x2 << " " << y2 << " " << z2;
             pointList.emplace_back(p.str());
             p.str("");
@@ -251,6 +248,59 @@ void sphere(double radius, int slices, int stacks, char* filename)
         }
     }
     saveFile(filename, pointList, "sphere", false);
+}
+
+void cone(double radius, double height, int slices, int stacks, char* filename)
+{
+    stacks++;
+    std::list<std::string> pointList;
+    std::stringstream p;
+
+    // Generate vertices for the base
+    for (int i = 0; i < slices; ++i) {
+        double theta = i * 2 * M_PI / slices;
+        double x = radius * cos(theta);
+        double z = radius * sin(theta);
+
+        p << x << " 0 " << z;
+        pointList.emplace_back(p.str());
+        p.str("");
+    }
+
+    // Generate vertices for the sides
+    double delta_height = height / (stacks - 1); // Adjusted for apex
+    double delta_theta = 2 * M_PI / slices;
+
+    for (int i = 0; i < stacks; ++i) {
+        double y = i * delta_height;
+        double r = radius * (1.0 - y / height);
+
+        for (int j = 0; j < slices; ++j) {
+            double theta1 = j * delta_theta;
+            double theta2 = (j + 1) * delta_theta;
+
+            double x1 = r * cos(theta1);
+            double z1 = r * sin(theta1);
+
+            double x2 = r * cos(theta2);
+            double z2 = r * sin(theta2);
+
+            // Push vertices for the two triangles forming the side face
+            p << x1 << " " << y << " " << z1;
+            pointList.emplace_back(p.str());
+            p.str("");
+
+            p << x2 << " " << y << " " << z2;
+            pointList.emplace_back(p.str());
+            p.str("");
+
+            p << "0 " << height << " 0"; // Apex
+            pointList.emplace_back(p.str());
+            p.str("");
+        }
+    }
+
+    saveFile(filename, pointList, "cone", false);
 }
 
 int main(int argc, char* argv[])
@@ -287,6 +337,16 @@ int main(int argc, char* argv[])
             return 0;
         }
         sphere(std::stod(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5]);
+    }
+    else if (std::strcmp(argv[1], "cone") == 0)
+    {
+        if(argc != 7)
+        {
+            printArgumentError();
+            return 0;
+        }
+        cone(std::stod(argv[2]), std::stod(argv[3]), std::stoi(argv[4]),
+             std::stoi(argv[5]), argv[6]);
     }
     else
     {
