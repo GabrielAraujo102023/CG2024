@@ -1,13 +1,10 @@
 #ifdef __APPLE__
 #include <GLUT/glut.h>
 #else
-#include <GL/glut.h>
 #endif
 #include <cstring>
 #include <cstdio>
-#include <cstdlib>
 #include <string>
-#define USE_MATH_DEFINES
 #include <fstream>
 #include <list>
 #include <sstream>
@@ -190,6 +187,7 @@ void box(double length, int divisions, char* filename)
     plane(length, divisions, constant.str(), filename, "", true, 'z');
 }
 
+// Calcular esfera
 void sphere(double radius, int slices, int stacks, char* filename)
 {
     std::list<std::string> pointList = {};
@@ -250,13 +248,13 @@ void sphere(double radius, int slices, int stacks, char* filename)
     saveFile(filename, pointList, "sphere", false);
 }
 
+// Calcular cone
 void cone(double radius, double height, int slices, int stacks, char* filename)
 {
-    stacks++;
     std::list<std::string> pointList;
     std::stringstream p;
 
-    // Generate vertices for the base
+    // Base
     for (int i = 0; i < slices; ++i) {
         double theta = i * 2 * M_PI / slices;
         double x = radius * cos(theta);
@@ -267,8 +265,8 @@ void cone(double radius, double height, int slices, int stacks, char* filename)
         p.str("");
     }
 
-    // Generate vertices for the sides
-    double delta_height = height / (stacks - 1); // Adjusted for apex
+    // Lado
+    double delta_height = height / (stacks - 1);
     double delta_theta = 2 * M_PI / slices;
 
     for (int i = 0; i < stacks; ++i) {
@@ -285,7 +283,6 @@ void cone(double radius, double height, int slices, int stacks, char* filename)
             double x2 = r * cos(theta2);
             double z2 = r * sin(theta2);
 
-            // Push vertices for the two triangles forming the side face
             p << x1 << " " << y << " " << z1;
             pointList.emplace_back(p.str());
             p.str("");
@@ -294,7 +291,7 @@ void cone(double radius, double height, int slices, int stacks, char* filename)
             pointList.emplace_back(p.str());
             p.str("");
 
-            p << "0 " << height << " 0"; // Apex
+            p << "0 " << height << " 0";
             pointList.emplace_back(p.str());
             p.str("");
         }
@@ -346,7 +343,7 @@ int main(int argc, char* argv[])
             return 0;
         }
         cone(std::stod(argv[2]), std::stod(argv[3]), std::stoi(argv[4]),
-             std::stoi(argv[5]), argv[6]);
+             std::stoi(argv[5]) + 1, argv[6]);
     }
     else
     {
