@@ -50,7 +50,7 @@ bool saveFile(char* filename, const std::list<std::string>& points, const std::s
 }
 
 //Após o calculo de todos os quadrados de uma linha num plano, usa esta função para calcular o ponto inicial da próxima linha
-void planeNextPoint(int rowsCalculated, double halfLength, double divisionSize, double& nextX, double& nextZ)
+void planeNextPoint(int rowsCalculated, float halfLength, float divisionSize, float& nextX, float& nextZ)
 {
     // Z = Metade da largura do quadrado menos a altura das linhas já calculadas
     nextZ = halfLength - (divisionSize * rowsCalculated);
@@ -58,11 +58,11 @@ void planeNextPoint(int rowsCalculated, double halfLength, double divisionSize, 
     nextX = halfLength;
 }
 
-double calculatePlaneY(double x, double z, double divisionSize, const std::string& y, std::list<std::string>& pointList)
+float calculatePlaneY(float x, float z, float divisionSize, const std::string& y, std::list<std::string>& pointList)
 {
     std::stringstream p1, p2, p3, p4;
-    double xMin = x - divisionSize;
-    double zMin = z - divisionSize;
+    float xMin = x - divisionSize;
+    float zMin = z - divisionSize;
     p1 << x << y << z;
     p2 << xMin << y << z;
     p3 << xMin << y << zMin;
@@ -78,11 +78,11 @@ double calculatePlaneY(double x, double z, double divisionSize, const std::strin
 
     return xMin;
 }
-double calculatePlaneX(double y, double z, double divisionSize, const std::string& x, std::list<std::string>& pointList)
+float calculatePlaneX(float y, float z, float divisionSize, const std::string& x, std::list<std::string>& pointList)
 {
     std::stringstream p1, p2, p3, p4;
-    double yMin = y - divisionSize;
-    double zMin = z - divisionSize;
+    float yMin = y - divisionSize;
+    float zMin = z - divisionSize;
     p1 << x << y << " " << z;
     p2 << x << y << " " << zMin;
     p3 << x << yMin << " " << zMin;
@@ -98,11 +98,11 @@ double calculatePlaneX(double y, double z, double divisionSize, const std::strin
 
     return yMin;
 }
-double calculatePlaneZ(double x, double y, double divisionSize, const std::string& z, std::list<std::string>& pointList)
+float calculatePlaneZ(float x, float y, float divisionSize, const std::string& z, std::list<std::string>& pointList)
 {
     std::stringstream p1, p2, p3, p4;
-    double xMin = x - divisionSize;
-    double yMin = y - divisionSize;
+    float xMin = x - divisionSize;
+    float yMin = y - divisionSize;
     p1 << x << " " << y << z;
     p2 << xMin << " " << y << z;
     p3 << xMin << " " << yMin << z;
@@ -119,7 +119,7 @@ double calculatePlaneZ(double x, double y, double divisionSize, const std::strin
     return xMin;
 }
 
-double calculatePlane(double a, double b, double divisionSize, const std::string& constant,
+float calculatePlane(float a, float b, float divisionSize, const std::string& constant,
                     std::list<std::string>& pointList, char constAxis)
 {
     switch(constAxis)
@@ -137,17 +137,17 @@ double calculatePlane(double a, double b, double divisionSize, const std::string
 }
 
 //Calcula pontos para um plano
-bool plane(double length, int divisions, const std::string& constant, char* filename, const std::string& firstLine,
+bool plane(float length, int divisions, const std::string& constant, char* filename, const std::string& firstLine,
            bool append, char axis)
 {
     std::list<std::string> pointList = {};
     int rowsCalculated = 0;
     //Tamanho de cada quadrado que forma o plano
-    double divisionSize = length / divisions;
+    float divisionSize = length / divisions;
     //Metade da largura do plano, para calcular teorema de pitágoras
-    double halfLength = length / 2;
+    float halfLength = length / 2;
     //Pontos nao constantes do plano. Valor inicial é o canto superior direito do plano
-    double a = halfLength, b = halfLength;
+    float a = halfLength, b = halfLength;
     while(rowsCalculated < divisions)
     {
         //Aqui calcula os pontos de todos os quadrados de um fila
@@ -162,9 +162,9 @@ bool plane(double length, int divisions, const std::string& constant, char* file
 }
 
 //Calcula planos para uma caixa
-void box(double length, int divisions, char* filename)
+void box(float length, int divisions, char* filename)
 {
-    double halfLength = length / 2;
+    float halfLength = length / 2;
     std::stringstream constant;
     constant << halfLength << " ";
     plane(length, divisions, constant.str(), filename, "box", false, 'x');
@@ -188,12 +188,12 @@ void box(double length, int divisions, char* filename)
 }
 
 // Calcular esfera
-void sphere(double radius, int slices, int stacks, char* filename)
+void sphere(float radius, int slices, int stacks, char* filename)
 {
     std::list<std::string> pointList = {};
     std::stringstream p;
-    double phi1, phi2, theta1, theta2;
-    double x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4;
+    float phi1, phi2, theta1, theta2;
+    float x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4;
     for (int i = 0; i < stacks; ++i) {
         phi1 = (i * M_PI) / stacks;
         phi2 = ((i + 1) * M_PI) / stacks;
@@ -249,39 +249,50 @@ void sphere(double radius, int slices, int stacks, char* filename)
 }
 
 // Calcular cone
-void cone(double radius, double height, int slices, int stacks, char* filename)
+void cone(float radius, float height, int slices, int stacks, char* filename)
 {
     std::list<std::string> pointList;
     std::stringstream p;
+    pointList.emplace_back("0 0 0");
 
+    /*
     // Base
     for (int i = 0; i < slices; ++i) {
-        double theta = i * 2 * M_PI / slices;
-        double x = radius * cos(theta);
-        double z = radius * sin(theta);
+        float theta = i * 2 * M_PI / slices;
+        float x = radius * cos(theta);
+        float z = radius * sin(theta);
 
         p << x << " 0 " << z;
         pointList.emplace_back(p.str());
         p.str("");
     }
+     */
 
+    for (int i = 0; i <= slices; ++i) {
+        float angle = (i / (float)slices) * 2.0f * M_PI;
+        p << radius * cos(angle) << " 0 " << radius * sin(angle);
+        pointList.emplace_back(p.str());
+        p.str("");
+    }
+
+    /*
     // Lado
-    double delta_height = height / (stacks - 1);
-    double delta_theta = 2 * M_PI / slices;
+    float delta_height = height / (stacks - 1);
+    float delta_theta = 2 * M_PI / slices;
 
     for (int i = 0; i < stacks; ++i) {
-        double y = i * delta_height;
-        double r = radius * (1.0 - y / height);
+        float y = i * delta_height;
+        float r = radius * (1.0 - y / height);
 
         for (int j = 0; j < slices; ++j) {
-            double theta1 = j * delta_theta;
-            double theta2 = (j + 1) * delta_theta;
+            float theta1 = j * delta_theta;
+            float theta2 = (j + 1) * delta_theta;
 
-            double x1 = r * cos(theta1);
-            double z1 = r * sin(theta1);
+            float x1 = r * cos(theta1);
+            float z1 = r * sin(theta1);
 
-            double x2 = r * cos(theta2);
-            double z2 = r * sin(theta2);
+            float x2 = r * cos(theta2);
+            float z2 = r * sin(theta2);
 
             p << x1 << " " << y << " " << z1;
             pointList.emplace_back(p.str());
@@ -296,7 +307,44 @@ void cone(double radius, double height, int slices, int stacks, char* filename)
             p.str("");
         }
     }
+    */
+    pointList.emplace_back("triang");
 
+    float stackHeight = height / stacks;
+    float stackRadius = radius / stacks;
+    for (int i = 0; i < stacks; ++i) {
+        float z0 = i * stackHeight;
+        float z1 = (i + 1) * stackHeight;
+        float r0 = radius - i * stackRadius;
+        float r1 = radius - (i + 1) * stackRadius;
+
+        for (int j = 0; j < slices; ++j) {
+            float angle0 = (j / (float)slices) * 2.0f * M_PI;
+            float angle1 = ((j + 1) / (float)slices) * 2.0f * M_PI;
+
+            // Triangle 1
+            p << r0 * cos(angle0) << " " << z0 << " " << r0 * sin(angle0);
+            pointList.emplace_back(p.str());
+            p.str("");
+            p << r0 * cos(angle1) << " " << z0 << " " << r0 * sin(angle1);
+            pointList.emplace_back(p.str());
+            p.str("");
+            p << r1 * cos(angle1) << " " << z1 << " " << r1 * sin(angle1);
+            pointList.emplace_back(p.str());
+            p.str("");
+
+            // Triangle 2
+            p << r0 * cos(angle0) << " " << z0 << " " << r0 * sin(angle0);
+            pointList.emplace_back(p.str());
+            p.str("");
+            p << r1 * cos(angle1) << " " << z1 << " " << r1 * sin(angle1);
+            pointList.emplace_back(p.str());
+            p.str("");
+            p << r1 * cos(angle0) << " " << z1 << " " << r1 * sin(angle0);
+            pointList.emplace_back(p.str());
+            p.str("");
+        }
+    }
     saveFile(filename, pointList, "cone", false);
 }
 

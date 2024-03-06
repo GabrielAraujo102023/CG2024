@@ -1,0 +1,3 @@
+/home/gabriel/Desktop/aulas/CG/CG2024/1/cmake-build-release/CMakeFiles/engine.dir
+/home/gabriel/Desktop/aulas/CG/CG2024/1/cmake-build-release/CMakeFiles/edit_cache.dir
+/home/gabriel/Desktop/aulas/CG/CG2024/1/cmake-build-release/CMakeFiles/rebuild_cache.dir
