@@ -255,19 +255,6 @@ void cone(float radius, float height, int slices, int stacks, char* filename)
     std::stringstream p;
     pointList.emplace_back("0 0 0");
 
-    /*
-    // Base
-    for (int i = 0; i < slices; ++i) {
-        float theta = i * 2 * M_PI / slices;
-        float x = radius * cos(theta);
-        float z = radius * sin(theta);
-
-        p << x << " 0 " << z;
-        pointList.emplace_back(p.str());
-        p.str("");
-    }
-     */
-
     for (int i = 0; i <= slices; ++i) {
         float angle = (i / (float)slices) * 2.0f * M_PI;
         p << radius * cos(angle) << " 0 " << radius * sin(angle);
@@ -275,39 +262,6 @@ void cone(float radius, float height, int slices, int stacks, char* filename)
         p.str("");
     }
 
-    /*
-    // Lado
-    float delta_height = height / (stacks - 1);
-    float delta_theta = 2 * M_PI / slices;
-
-    for (int i = 0; i < stacks; ++i) {
-        float y = i * delta_height;
-        float r = radius * (1.0 - y / height);
-
-        for (int j = 0; j < slices; ++j) {
-            float theta1 = j * delta_theta;
-            float theta2 = (j + 1) * delta_theta;
-
-            float x1 = r * cos(theta1);
-            float z1 = r * sin(theta1);
-
-            float x2 = r * cos(theta2);
-            float z2 = r * sin(theta2);
-
-            p << x1 << " " << y << " " << z1;
-            pointList.emplace_back(p.str());
-            p.str("");
-
-            p << x2 << " " << y << " " << z2;
-            pointList.emplace_back(p.str());
-            p.str("");
-
-            p << "0 " << height << " 0";
-            pointList.emplace_back(p.str());
-            p.str("");
-        }
-    }
-    */
     pointList.emplace_back("triang");
 
     float stackHeight = height / stacks;

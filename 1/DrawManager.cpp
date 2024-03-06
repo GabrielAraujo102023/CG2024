@@ -5,6 +5,33 @@
 #include "DrawManager.h"
 
 DrawManager* instance;
+int frameCount = 0;
+int previousTime = 0;
+
+void update(int value) {
+    // Calculate FPS
+    int elapsedTime = glutGet(GLUT_ELAPSED_TIME);
+    int deltaTime = elapsedTime - previousTime;
+    if (deltaTime > 1000) {
+        float fps = frameCount / (deltaTime / 1000.0f);
+
+        // Set FPS as window name
+        std::ostringstream windowTitle;
+        windowTitle << fps;
+        glutSetWindowTitle(windowTitle.str().c_str());
+
+        // Reset frame count and time
+        frameCount = 0;
+        previousTime = elapsedTime;
+    }
+
+    // Increment frame count
+    frameCount++;
+
+    // Call update function again
+    glutTimerFunc(1000 / 60, update, 0); // Update at 60 FPS
+}
+
 
 DrawManager::DrawManager(int windowWidth, int windowHeight, float px, float py, float pz, float lx, float ly, float lz,
                          float ux, float uy, float uz, float fov, float near, float far, int argc,
@@ -60,7 +87,6 @@ void DrawManager::changeSize(int w, int h) {
 void DrawManager::renderScene() {
     // clear buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     // set the camera
     glLoadIdentity();
     float rcosbeta = instance->r * std::cos(instance->beta);
@@ -91,6 +117,7 @@ void DrawManager::renderScene() {
     {
         DrawManager::drawMyStuff(model);
     }
+
     // End of frame
     glutSwapBuffers();
 }
@@ -103,39 +130,43 @@ void DrawManager::drawMyStuff(const std::string& filename)
         printf("There was a problem with the file.");
         return;
     }
+    float x, y, z;
+    std::stringstream p;
     std::string line;
     std::getline(file, line);
-    float x,y,z;
-    if(line != "cone")
+    if (line != "cone")
     {
         glBegin(GL_TRIANGLES);
-        while(file >> x >> y >> z)
+        while (file >> x >> y >> z)
         {
             glVertex3f(x, y, z);
+            p << x << " " << y << " " << z;
+            p.str("");
         }
+        glEnd();
     }
     else
     {
         std::getline(file, line);
         std::stringstream aux(line);
         glBegin(GL_TRIANGLE_FAN);
-        while(line != "triang")
+        while (line != "triang")
         {
             aux >> x >> y >> z;
             glVertex3f(x, y, z);
-
-            fflush(stdout);
             std::getline(file, line);
-            printf("%s\n", line.c_str());
+            aux.str(line);
         }
+        glEnd();
         glBegin(GL_TRIANGLES);
-        while(file >> x >> y >> z)
+        while (file >> x >> y >> z)
         {
             glVertex3f(x, y, z);
+            p << x << " " << y << " " << z;
+            p.str("");
         }
+        glEnd();
     }
-
-    glEnd();
 }
 
 void DrawManager::processKeys(unsigned char c, int xx, int yy) {
@@ -186,7 +217,7 @@ void DrawManager::Draw() {
     glutInit(&argc, argv);
 
     glutInitWindowSize(windowWidth, windowHeight);
-    glutCreateWindow("wow");
+    glutCreateWindow("Welcome back, Mr. Stark");
     // Required callback registry
     ::glutDisplayFunc(renderScene);
     ::glutReshapeFunc(changeSize);
@@ -194,6 +225,8 @@ void DrawManager::Draw() {
     // Callback registration for keyboard processing
     glutKeyboardFunc(processKeys);
     glutSpecialFunc(processSpecialKeys);
+
+    glutTimerFunc(0, update, 0);
 
     // OpenGL settings
     glEnable(GL_DEPTH_TEST);
