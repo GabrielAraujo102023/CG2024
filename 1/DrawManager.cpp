@@ -9,27 +9,20 @@ int frameCount = 0;
 int previousTime = 0;
 
 void update(int value) {
-    // Calculate FPS
     int elapsedTime = glutGet(GLUT_ELAPSED_TIME);
     int deltaTime = elapsedTime - previousTime;
     if (deltaTime > 1000) {
         float fps = frameCount / (deltaTime / 1000.0f);
 
-        // Set FPS as window name
         std::ostringstream windowTitle;
         windowTitle << fps;
         glutSetWindowTitle(windowTitle.str().c_str());
 
-        // Reset frame count and time
         frameCount = 0;
         previousTime = elapsedTime;
     }
-
-    // Increment frame count
     frameCount++;
-
-    // Call update function again
-    glutTimerFunc(1000 / 60, update, 0); // Update at 60 FPS
+    glutTimerFunc(1000 / 60, update, 0);
 }
 
 
@@ -53,7 +46,6 @@ DrawManager::DrawManager(int windowWidth, int windowHeight, float px, float py, 
     this->r = 5;
     this->alpha = 0;
     this->beta = 0;
-    this->s = 10;
     this->argc = argc;
     this->argv = argv;
     this->modelList = std::move(modelList);
@@ -78,7 +70,7 @@ void DrawManager::changeSize(int w, int h) {
     glViewport(0, 0, instance->windowWidth, instance->windowHeight);
 
     // Set perspective
-    gluPerspective(45.0f ,ratio, 1.0f ,1000.0f);
+    gluPerspective(instance->fov ,ratio, instance->near ,instance->far);
 
     // return to the model view matrix mode
     glMatrixMode(GL_MODELVIEW);
@@ -183,12 +175,6 @@ void DrawManager::processKeys(unsigned char c, int xx, int yy) {
             break;
         case 's':
             instance->beta -= 0.1;
-            break;
-        case 'm':
-            instance->s++;
-            break;
-        case 'n':
-            instance->s--;
             break;
         default:
             break;

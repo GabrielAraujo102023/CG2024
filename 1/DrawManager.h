@@ -16,7 +16,7 @@ public:
                 char **argv, std::list<std::string> modelList);
     void Draw();
 private:
-    int windowWidth, windowHeight, s, argc;
+    int windowWidth, windowHeight, argc;
     float px, py, pz, lx, ly, lz, ux, uy, uz, fov, near, far, r, beta, alpha;
     char **argv;
     static void changeSize(int w, int h);
