@@ -14,7 +14,7 @@ void update(int value) {
     if (deltaTime > 1000) {
         float fps = frameCount / (deltaTime / 1000.0f);
 
-        std::ostringstream windowTitle;
+        ostringstream windowTitle;
         windowTitle << fps;
         glutSetWindowTitle(windowTitle.str().c_str());
 
@@ -28,7 +28,7 @@ void update(int value) {
 
 DrawManager::DrawManager(int windowWidth, int windowHeight, float px, float py, float pz, float lx, float ly, float lz,
                          float ux, float uy, float uz, float fov, float near, float far, int argc,
-                         char **argv, std::list<std::string> modelList) {
+                         char **argv, list<Group> rootGroup) {
     this->windowWidth = windowWidth;
     this->windowHeight = windowHeight;
     this->px = px;
@@ -48,7 +48,7 @@ DrawManager::DrawManager(int windowWidth, int windowHeight, float px, float py, 
     this->beta = 0;
     this->argc = argc;
     this->argv = argv;
-    this->modelList = std::move(modelList);
+    this->rootGroup = std::move(rootGroup);
 }
 
 void DrawManager::changeSize(int w, int h) {
@@ -87,10 +87,6 @@ void DrawManager::renderScene() {
     else if (instance->beta < -M_PI / 2)
         instance->beta = -M_PI / 2;
 
-    float rcosbeta = instance->r * std::cos(instance->beta);
-    instance->px = rcosbeta * std::cos(instance->alpha);
-    instance->pz = rcosbeta * std::sin(instance->alpha);
-    instance->py = instance->r * std::sin(instance->beta);
     gluLookAt(instance->px,instance->py,instance->pz,
               instance->lx,instance->ly,instance->lz,
               instance->ux,instance->uy,instance->uz);
@@ -111,60 +107,88 @@ void DrawManager::renderScene() {
     glVertex3f(0.0f, 0.0f, 100.0f);
     glEnd();
 
-    for (const std::string& model : instance->modelList)
-    {
-        DrawManager::drawMyStuff(model);
-    }
+    DrawManager::drawMyStuff(instance->rootGroup.front());
 
     // End of frame
     glutSwapBuffers();
 }
 
-void DrawManager::drawMyStuff(const std::string& filename)
+void DrawManager::drawMyStuff(const Group& rootGroup)
 {
-    std::ifstream file(filename);
-    if (!file.is_open())
-    {
-        printf("There was a problem with the file.");
-        return;
-    }
-    float x, y, z;
-    std::stringstream p;
-    std::string line;
-    std::getline(file, line);
-    if (line != "cone")
-    {
-        glBegin(GL_TRIANGLES);
-        while (file >> x >> y >> z)
-        {
-            glVertex3f(x, y, z);
-            p << x << " " << y << " " << z;
-            p.str("");
+    glPushMatrix();
+    // Fazer transformações
+    for(const auto& pair : rootGroup.transformation){
+        char type = pair.first;
+        map<char, float> values = pair.second;
+
+        switch (type){
+            case 't':
+                glTranslatef(values['x'], values['y'], values['z']);
+                break;
+            case 'r':
+                glRotatef(values['a'], values['x'], values['y'], values['z']);
+                break;
+            case 's':
+                glScalef(values['x'], values['y'], values['z']);
+                break;
+            default:
+                break;
         }
-        glEnd();
     }
-    else
+
+    // Desenhar modelos
+    for(const string& model : rootGroup.models)
     {
-        std::getline(file, line);
-        std::stringstream aux(line);
-        glBegin(GL_TRIANGLE_FAN);
-        while (line != "triang")
-        {
-            aux >> x >> y >> z;
-            glVertex3f(x, y, z);
-            std::getline(file, line);
-            aux.str(line);
+        ifstream file(model);
+        if (!file.is_open()) {
+            printf("There was a problem with the file: %s\n", model.c_str());
+            return;
         }
-        glEnd();
-        glBegin(GL_TRIANGLES);
-        while (file >> x >> y >> z)
+
+        float x, y, z;
+        stringstream p;
+        string line;
+        getline(file, line);
+        if (line != "cone")
         {
-            glVertex3f(x, y, z);
-            p << x << " " << y << " " << z;
-            p.str("");
+            glBegin(GL_TRIANGLES);
+            while (file >> x >> y >> z)
+            {
+                glVertex3f(x, y, z);
+                p << x << " " << y << " " << z;
+                p.str("");
+            }
+            glEnd();
         }
-        glEnd();
+        else
+        {
+            getline(file, line);
+            stringstream aux(line);
+            glBegin(GL_TRIANGLE_FAN);
+            while (line != "triang")
+            {
+                aux >> x >> y >> z;
+                glVertex3f(x, y, z);
+                getline(file, line);
+                aux.str(line);
+            }
+            glEnd();
+            glBegin(GL_TRIANGLES);
+            while (file >> x >> y >> z)
+            {
+                glVertex3f(x, y, z);
+                p << x << " " << y << " " << z;
+                p.str("");
+            }
+            glEnd();
+        }
     }
+
+    for(const Group& g : rootGroup.groups)
+    {
+        DrawManager::drawMyStuff(g);
+    }
+    glPopMatrix();
 }
 
 void DrawManager::processKeys(unsigned char c, int xx, int yy) {

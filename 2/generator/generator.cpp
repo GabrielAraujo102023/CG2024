@@ -9,7 +9,7 @@
 #include <list>
 #include <sstream>
 #include <cmath>
-
+using namespace std;
 void printArgumentError()
 {
     printf("Possible arguments:\n\t"
@@ -24,12 +24,12 @@ void printArgumentError()
 //Pontos devem vir dentro de uma lista de strings assim --> "x y z"
 //name é o texto que vai ser escrito na primeira linha
 //append é um bool a dizer se o ficheiro é para ser escrito do 0 ou appended
-bool saveFile(char* filename, const std::list<std::string>& points, const std::string& name, bool append)
+bool saveFile(char* filename, const list<string>& points, const string& name, bool append)
 {
-    std::ofstream file;
+    ofstream file;
     if (append)
     {
-        file.open(filename, std::ios_base::app);
+        file.open(filename, ios_base::app);
     }
     else
     {
@@ -42,7 +42,7 @@ bool saveFile(char* filename, const std::list<std::string>& points, const std::s
     }
     if (!name.empty())
         file << name << "\n";
-    for(const std::string& s : points)
+    for(const string& s : points)
     {
         file << s << "\n";
     }
@@ -58,10 +58,10 @@ void planeNextPoint(int rowsCalculated, float halfLength, float divisionSize, fl
     nextX = halfLength;
 }
 
-float calculatePlaneY(float x, float z, float divisionSize, const std::string& y, std::list<std::string>& pointList,
+float calculatePlaneY(float x, float z, float divisionSize, const string& y, list<string>& pointList,
                       bool flipped)
 {
-    std::stringstream p1, p2, p3, p4;
+    stringstream p1, p2, p3, p4;
     float xMin = x - divisionSize;
     float zMin = z - divisionSize;
     p1 << x << y << z;
@@ -92,10 +92,10 @@ float calculatePlaneY(float x, float z, float divisionSize, const std::string& y
 
     return xMin;
 }
-float calculatePlaneX(float y, float z, float divisionSize, const std::string& x, std::list<std::string>& pointList,
+float calculatePlaneX(float y, float z, float divisionSize, const string& x, list<string>& pointList,
                       bool flipped)
 {
-    std::stringstream p1, p2, p3, p4;
+    stringstream p1, p2, p3, p4;
     float yMin = y - divisionSize;
     float zMin = z - divisionSize;
     p1 << x << y << " " << z;
@@ -126,10 +126,10 @@ float calculatePlaneX(float y, float z, float divisionSize, const std::string& x
 
     return yMin;
 }
-float calculatePlaneZ(float x, float y, float divisionSize, const std::string& z, std::list<std::string>& pointList,
+float calculatePlaneZ(float x, float y, float divisionSize, const string& z, list<string>& pointList,
                       bool flipped)
 {
-    std::stringstream p1, p2, p3, p4;
+    stringstream p1, p2, p3, p4;
     float xMin = x - divisionSize;
     float yMin = y - divisionSize;
     p1 << x << " " << y << z;
@@ -161,8 +161,8 @@ float calculatePlaneZ(float x, float y, float divisionSize, const std::string& z
     return xMin;
 }
 
-float calculatePlane(float a, float b, float divisionSize, const std::string& constant,
-                    std::list<std::string>& pointList, char constAxis, bool flipped)
+float calculatePlane(float a, float b, float divisionSize, const string& constant,
+                    list<string>& pointList, char constAxis, bool flipped)
 {
     switch(constAxis)
     {
@@ -179,10 +179,10 @@ float calculatePlane(float a, float b, float divisionSize, const std::string& co
 }
 
 //Calcula pontos para um plano
-bool plane(float length, int divisions, const std::string& constant, char* filename, const std::string& firstLine,
+bool plane(float length, int divisions, const string& constant, char* filename, const string& firstLine,
            bool append, char axis, bool flipped)
 {
-    std::list<std::string> pointList = {};
+    list<string> pointList = {};
     int rowsCalculated = 0;
     //Tamanho de cada quadrado que forma o plano
     float divisionSize = length / divisions;
@@ -207,7 +207,7 @@ bool plane(float length, int divisions, const std::string& constant, char* filen
 void box(float length, int divisions, char* filename)
 {
     float halfLength = length / 2;
-    std::stringstream constant;
+    stringstream constant;
     constant << halfLength << " ";
     plane(length, divisions, constant.str(), filename, "box", false, 'x', false);
     constant.str("");
@@ -232,8 +232,8 @@ void box(float length, int divisions, char* filename)
 // Calcular esfera
 void sphere(float radius, int slices, int stacks, char* filename)
 {
-    std::list<std::string> pointList = {};
-    std::stringstream p;
+    list<string> pointList = {};
+    stringstream p;
     float phi1, phi2, theta1, theta2;
     float x1, x2, x3, x4, y1, y2, y3, y4, z1, z2, z3, z4;
     for (int i = 0; i < stacks; ++i) {
@@ -294,8 +294,8 @@ void sphere(float radius, int slices, int stacks, char* filename)
 // Calcular cone
 void cone(float radius, float height, int slices, int stacks, char* filename)
 {
-    std::list<std::string> pointList;
-    std::stringstream p;
+    list<string> pointList;
+    stringstream p;
     pointList.emplace_back("0 0 0");
 
     for (int i = 0; i <= slices; ++i) {
@@ -352,43 +352,43 @@ int main(int argc, char* argv[])
         printArgumentError();
         return 0;
     }
-    if (std::strcmp(argv[1], "plane") == 0)
+    if (strcmp(argv[1], "plane") == 0)
     {
         if(argc != 5)
         {
             printArgumentError();
             return 0;
         }
-        plane(std::stod(argv[2]), std::stoi(argv[3]), " 0 ", argv[4],
+        plane(stod(argv[2]), stoi(argv[3]), " 0 ", argv[4],
               "plane", false, 'y', false);
     }
-    else if (std::strcmp(argv[1], "box") == 0)
+    else if (strcmp(argv[1], "box") == 0)
     {
         if(argc != 5)
         {
             printArgumentError();
             return 0;
         }
-        box(std::stod(argv[2]), std::stoi(argv[3]), argv[4]);
+        box(stod(argv[2]), stoi(argv[3]), argv[4]);
     }
-    else if (std::strcmp(argv[1], "sphere") == 0)
+    else if (strcmp(argv[1], "sphere") == 0)
     {
         if(argc != 6)
         {
             printArgumentError();
             return 0;
         }
-        sphere(std::stod(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5]);
+        sphere(stod(argv[2]), stoi(argv[3]), stoi(argv[4]), argv[5]);
     }
-    else if (std::strcmp(argv[1], "cone") == 0)
+    else if (strcmp(argv[1], "cone") == 0)
     {
         if(argc != 7)
         {
             printArgumentError();
             return 0;
         }
-        cone(std::stod(argv[2]), std::stod(argv[3]), std::stoi(argv[4]),
-             std::stoi(argv[5]) + 1, argv[6]);
+        cone(stod(argv[2]), stod(argv[3]), stoi(argv[4]),
+             stoi(argv[5]) + 1, argv[6]);
     }
     else
     {

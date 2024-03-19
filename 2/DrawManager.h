@@ -5,15 +5,16 @@
 #else
 #include <GL/glut.h>
 #include <list>
+#include "Group.h"
 
 #endif
-
+using namespace std;
 class DrawManager
 {
 public:
     DrawManager(int windowWidth, int windowHeight, float px, float py, float pz, float lx, float ly, float lz,
                 float ux, float uy, float uz, float fov, float near, float far, int argc,
-                char **argv, std::list<std::string> modelList);
+                char **argv, list<Group> rootGroup);
     void Draw();
 private:
     int windowWidth, windowHeight, argc;
@@ -21,10 +22,10 @@ private:
     char **argv;
     static void changeSize(int w, int h);
     static void renderScene();
-    static void drawMyStuff(const std::string& filename);
+    static void drawMyStuff(const Group& rootGroup);
     static void processSpecialKeys(int key, int xx, int yy);
     static void processKeys(unsigned char c, int xx, int yy);
-    std::list<std::string> modelList;
+    list<Group> rootGroup;
 };
 
 
