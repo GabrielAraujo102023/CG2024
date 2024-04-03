@@ -18,7 +18,7 @@ public:
     void Draw();
 private:
     int windowWidth, windowHeight, argc;
-    float px, py, pz, lx, ly, lz, ux, uy, uz, fov, near, far, r, beta, alpha;
+    float px, py, pz, lx, ly, lz, ux, uy, uz, fov, near, far;
     char **argv;
     static void changeSize(int w, int h);
     static void renderScene();

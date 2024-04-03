@@ -7,6 +7,9 @@
 DrawManager* instance;
 int frameCount = 0;
 int previousTime = 0;
+int startX, startY, tracking = 0;
+int a = 0, b = 45, r = 0;
+float camX, camY, camZ;
 
 void update(int value) {
     int elapsedTime = glutGet(GLUT_ELAPSED_TIME);
@@ -43,9 +46,6 @@ DrawManager::DrawManager(int windowWidth, int windowHeight, float px, float py, 
     this->fov = fov;
     this->near = near;
     this->far = far;
-    this->r = 5;
-    this->alpha = 0;
-    this->beta = 0;
     this->argc = argc;
     this->argv = argv;
     this->rootGroup = std::move(rootGroup);
@@ -82,12 +82,7 @@ void DrawManager::renderScene() {
     // set the camera
     glLoadIdentity();
 
-    if (instance->beta > M_PI / 2)
-        instance->beta = M_PI / 2;
-    else if (instance->beta < -M_PI / 2)
-        instance->beta = -M_PI / 2;
-
-    gluLookAt(instance->px,instance->py,instance->pz,
+    gluLookAt(camX, camY, camZ,
               instance->lx,instance->ly,instance->lz,
               instance->ux,instance->uy,instance->uz);
 
@@ -195,20 +190,22 @@ void DrawManager::processKeys(unsigned char c, int xx, int yy) {
     switch(c)
     {
         case 'w':
-            instance->beta += 0.1;
-            break;
-        case 'd':
-            instance->alpha -= 0.1;
-            break;
-        case 'a':
-            instance->alpha += 0.1;
+
             break;
         case 's':
-            instance->beta -= 0.1;
+
+            break;
+        case 'a':
+
+            break;
+        case 'd':
+
             break;
         default:
             break;
     }
+    printf("%c", c);
+    fflush(stdout);
     glutPostRedisplay();
 }
 
@@ -217,14 +214,76 @@ void DrawManager::processSpecialKeys(int key, int xx, int yy) {
     switch(key)
     {
         case GLUT_KEY_UP:
-            instance->r -= 0.1;
+
             break;
         case GLUT_KEY_DOWN:
-            instance->r += 0.1;
+
             break;
         default:
             break;
     }
+    glutPostRedisplay();
+}
+
+void processMouseButtons(int button, int state, int xx, int yy) {
+    if (state == GLUT_DOWN)  {
+        startX = xx;
+        startY = yy;
+        if (button == GLUT_LEFT_BUTTON)
+            tracking = 1;
+        else if (button == GLUT_RIGHT_BUTTON)
+            tracking = 2;
+        else
+            tracking = 0;
+    }
+    else if (state == GLUT_UP) {
+        if (tracking == 1) {
+            a += (xx - startX);
+            b += (yy - startY);
+        }
+        else if (tracking == 2) {
+
+            r -= yy - startY;
+            if (r < 3)
+                r = 3.0;
+        }
+        tracking = 0;
+    }
+}
+
+
+void processMouseMotion(int xx, int yy) {
+    int deltaX, deltaY;
+    int alphaAux = 0, betaAux = 0, rAux = 0;
+
+    if (!tracking)
+        return;
+
+    deltaX = xx - startX;
+    deltaY = yy - startY;
+
+    if (tracking == 1) {
+        alphaAux = a + deltaX;
+        betaAux = b + deltaY;
+
+        if (betaAux > 85.0)
+            betaAux = 85.0;
+        else if (betaAux < -85.0)
+            betaAux = -85.0;
+
+        rAux = r;
+    }
+    else if (tracking == 2) {
+
+        alphaAux = a;
+        betaAux = b;
+        rAux = r - deltaY;
+        if (rAux < 3)
+            rAux = 3;
+    }
+    camX = rAux * sin(alphaAux * 3.14 / 180.0) * cos(betaAux * 3.14 / 180.0);
+    camZ = rAux * cos(alphaAux * 3.14 / 180.0) * cos(betaAux * 3.14 / 180.0);
+    camY = rAux * sin(betaAux * 3.14 / 180.0);
     glutPostRedisplay();
 }
 
@@ -241,8 +300,15 @@ void DrawManager::Draw() {
     // Callback registration for keyboard processing
     glutKeyboardFunc(processKeys);
     glutSpecialFunc(processSpecialKeys);
+    glutMouseFunc(processMouseButtons);
+    glutMotionFunc(processMouseMotion);
 
     glutTimerFunc(0, update, 0);
+
+    camX = this->px;
+    camY = this->py;
+    camZ = this->pz;
+    r = sqrt(this->px * this->px + this->py * this->py + this->pz * this->pz);
 
     // OpenGL settings
     glEnable(GL_DEPTH_TEST);
