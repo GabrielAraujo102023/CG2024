@@ -10,6 +10,7 @@ int previousTime = 0;
 int startX, startY, tracking = 0;
 int a = 0, b = 45, r = 0;
 float camX, camY, camZ;
+float moveSpeed = 0.5f;
 
 void update(int value) {
     int elapsedTime = glutGet(GLUT_ELAPSED_TIME);
@@ -187,37 +188,57 @@ void DrawManager::drawMyStuff(const Group& rootGroup)
 }
 
 void DrawManager::processKeys(unsigned char c, int xx, int yy) {
+    // Vetor que vai da câmara ao ponto que estamos a olhar
+    float forwardX = instance->lx - camX;
+    float forwardY = instance->ly - camY;
+    float forwardZ = instance->lz - camZ;
+
+    // Normallização
+    float forwardLength = sqrt(forwardX * forwardX + forwardY * forwardY + forwardZ * forwardZ);
+    forwardX /= forwardLength;
+    forwardY /= forwardLength;
+    forwardZ /= forwardLength;
+
+    // Vetor da direita da câmara
+    float rightX = forwardY * instance->uy - forwardZ * instance->uz;
+    float rightY = forwardZ * instance->ux - forwardX * instance->uz;
+    float rightZ = forwardX * instance->uy - forwardY * instance->ux;
+
     switch(c)
     {
-        case 'w':
-
-            break;
-        case 's':
-
-            break;
         case 'a':
+            camX -= moveSpeed * rightX;
+            camY -= moveSpeed * rightY;
+            camZ -= moveSpeed * rightZ;
 
+            instance->lx -= moveSpeed * rightX;
+            instance->ly -= moveSpeed * rightY;
+            instance->lz -= moveSpeed * rightZ;
             break;
         case 'd':
+            camX += moveSpeed * rightX;
+            camY += moveSpeed * rightY;
+            camZ += moveSpeed * rightZ;
 
+            instance->lx += moveSpeed * rightX;
+            instance->ly += moveSpeed * rightY;
+            instance->lz += moveSpeed * rightZ;
             break;
         default:
             break;
     }
-    printf("%c", c);
-    fflush(stdout);
+    r = sqrt(camX * camX + camY * camY + camZ * camZ);
     glutPostRedisplay();
 }
-
 
 void DrawManager::processSpecialKeys(int key, int xx, int yy) {
     switch(key)
     {
         case GLUT_KEY_UP:
-
+            moveSpeed += 0.1;
             break;
         case GLUT_KEY_DOWN:
-
+            moveSpeed -= 0.1;
             break;
         default:
             break;
@@ -309,6 +330,9 @@ void DrawManager::Draw() {
     camY = this->py;
     camZ = this->pz;
     r = sqrt(this->px * this->px + this->py * this->py + this->pz * this->pz);
+    a = acos(instance->pz / r);
+    b = atan2(instance->py, instance->px);
+
 
     // OpenGL settings
     glEnable(GL_DEPTH_TEST);
