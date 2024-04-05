@@ -306,7 +306,7 @@ void cone(float radius, float height, int slices, int stacks, char* filename)
     }
 
     pointList.emplace_back("triang");
-
+    stacks--;
     float stackHeight = height / stacks;
     float stackRadius = radius / stacks;
     for (int i = 0; i < stacks; ++i) {

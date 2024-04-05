@@ -103,6 +103,8 @@ void DrawManager::renderScene() {
     glVertex3f(0.0f, 0.0f, 100.0f);
     glEnd();
 
+    glColor3f(1,1,1);
+
     DrawManager::drawMyStuff(instance->rootGroup.front());
 
     // End of frame
