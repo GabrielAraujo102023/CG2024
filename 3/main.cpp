@@ -17,6 +17,7 @@ list<Group> rootGroup;
 list<Group> loadGroups(TiXmlElement* root)
 {
     list<Group> res = {};
+    int translateId = 0;
     for (TiXmlElement* group = root->FirstChildElement("group");
          group != nullptr;
          group = group->NextSiblingElement("group")) {
@@ -28,30 +29,55 @@ list<Group> loadGroups(TiXmlElement* root)
             TiXmlElement* translate = transform->FirstChildElement("translate");
             if (translate)
             {
-                float x, y, z;
+                float x, y, z, time, align;
+                string alignAux = "";
                 translate->QueryFloatAttribute("x", &x);
                 translate->QueryFloatAttribute("y", &y);
                 translate->QueryFloatAttribute("z", &z);
+                translate->QueryFloatAttribute("time", &time);
+                translate->QueryStringAttribute("align", &alignAux);
+                if(!alignAux.empty()){
+                    align = alignAux == "True";
+                    vector<int> points = {};
+                    float point_x, point_y, point_z;
+                    for(TiXmlElement* point = translate->FirstChildElement("point");
+                        point;
+                        point = point->NextSiblingElement("model"))
+                    {
+                        point->QueryFloatAttribute("x", &point_x);
+                        point->QueryFloatAttribute("y", &point_y);
+                        point->QueryFloatAttribute("z", &point_z);
+                        points.emplace_back(point_x);
+                        points.emplace_back(point_y);
+                        points.emplace_back(point_z);
+                    }
+                    GROUP.points[translateId] = points;
+                }
                 transformation['t'] = {
                                 {'x', x},
                                 {'y', y},
-                                {'z', z}
+                                {'z', z},
+                                {'t', time},
+                                {'a', align},
+                                {'i', translateId++}
                 };
             }
 
             TiXmlElement* rotate = transform->FirstChildElement("rotate");
             if (rotate)
             {
-                float angle, x, y, z;
+                float angle, x, y, z, time;
                 rotate->QueryFloatAttribute("angle", &angle);
                 rotate->QueryFloatAttribute("x", &x);
                 rotate->QueryFloatAttribute("y", &y);
                 rotate->QueryFloatAttribute("z", &z);
+                rotate->QueryFloatAttribute("time", &time);
                 transformation['r'] = {
                         {'a', angle},
                         {'x', x},
                         {'y', y},
-                        {'z', z}
+                        {'z', z},
+                        {'t', time}
                 };
             }
 

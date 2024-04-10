@@ -90,16 +90,15 @@ void DrawManager::renderScene() {
               instance->ux,instance->uy,instance->uz);
 
     glBegin(GL_LINES);
-
-// X axis in red
+    // X axis in red
     glColor3f(1.0f, 0.0f, 0.0f);
     glVertex3f(-100.0f, 0.0f, 0.0f);
     glVertex3f( 100.0f, 0.0f, 0.0f);
-// Y Axis in Green
+    // Y Axis in Green
     glColor3f(0.0f, 1.0f, 0.0f);
     glVertex3f(0.0f, -100.0f, 0.0f);
     glVertex3f(0.0f, 100.0f, 0.0f);
-// Z Axis in Blue
+    // Z Axis in Blue
     glColor3f(0.0f, 0.0f, 1.0f);
     glVertex3f(0.0f, 0.0f, -100.0f);
     glVertex3f(0.0f, 0.0f, 100.0f);
@@ -135,6 +134,7 @@ void DrawManager::drawMyStuff(const Group& rootGroup)
     }
 
     // Desenhar modelos
+    glColor3f(1,1,1);
     for(const string& model : rootGroup.models)
     {
         glBindBuffer(GL_ARRAY_BUFFER, vboIds[model][0]);
@@ -299,6 +299,7 @@ void DrawManager::Draw() {
     glewInit();
     glEnableClientState(GL_VERTEX_ARRAY);
     loadModels(instance->rootGroup.front());
+    //initAxisVBO();
 
     // OpenGL settings
     glEnable(GL_DEPTH_TEST);
@@ -345,3 +346,39 @@ void DrawManager::initVBO(vector<GLfloat> vertex, string model) {
     vboIds[model][0] = id;
     vboIds[model][1] = size;
 }
+/*
+void DrawManager::initAxisVBO() {
+    GLuint xid, yid, zid;
+    vector<GLfloat> vertexX = {-100, 0, 0, 100, 0, 0};
+    vector<GLfloat> vertexY = {0, -100, 0, 0, 100, 0};
+    vector<GLfloat> vertexZ = {0, 0, -100, 0, 0, 100};
+
+    vector<GLuint> ids = {xid, yid, zid};
+    vector<vector<GLfloat>> vertexes = {vertexX, vertexY, vertexZ};
+    vector<string> names = {"xaxis", "yaxis", "zaxis"};
+
+    int vertexSize = 6;
+    GLuint bufferSize = sizeof(GLfloat) * vertexSize;
+
+    for(int i = 0; i < 3; i++){
+        glGenBuffers(1, &ids[i]);
+        glBindBuffer(GL_ARRAY_BUFFER, ids[i]);
+        glBufferData(GL_ARRAY_BUFFER, bufferSize, vertexes[i].data(), GL_STATIC_DRAW);
+        vboIds[names[i]][0] = ids[i];
+        vboIds[names[i]][1] = vertexSize;
+    }
+}
+
+void DrawManager::drawAxis() {
+    vector<string> names = {"xaxis", "yaxis", "zaxis"};
+    //X vermelho, Y verde, Z azul
+    vector<vector<float>> colors = {{1,0,0},{0,1,0},{0,0,1}};
+    for(int i = 0; i < 3; i++)
+    {
+        glColor3f(colors[i][0], colors[i][1], colors[i][2]);
+        glBindBuffer(GL_ARRAY_BUFFER, vboIds[names[i]][0]);
+        glVertexPointer(3, GL_FLOAT,0,nullptr);
+        glDrawArrays(GL_TRIANGLES, 0, vboIds[names[i]][1]);
+    }
+}
+*/

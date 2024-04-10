@@ -4,16 +4,19 @@
 #include <string>
 #include <map>
 #include <list>
+#include <vector>
 using namespace std;
 
 
 class Group {
 public:
-    Group(map<char,map<char, float>> transformation, list<string> models, list<Group> groups);
+    Group(map<char,map<char, float>> transformation, list<string> models, list<Group> groups,
+          map<int, vector<int>> points);
     Group();
     map<char,map<char, float>> transformation;
     list<string> models;
     list<Group> groups;
+    map<int, vector<int>> points;
 };
 
 

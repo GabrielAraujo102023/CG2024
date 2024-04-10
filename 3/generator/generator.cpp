@@ -9,6 +9,9 @@
 #include <list>
 #include <sstream>
 #include <cmath>
+#include <vector>
+#include <map>
+#include <algorithm>
 using namespace std;
 void printArgumentError()
 {
@@ -345,6 +348,111 @@ void cone(float radius, float height, int slices, int stacks, char* filename)
     saveFile(filename, pointList, "cone", false);
 }
 
+void fixLine(ifstream &patch, string line, stringstream &ss)
+{
+    getline(patch, line);
+    //Remove as vírgulas
+    line.erase(std::remove_if(line.begin(), line.end(),[](unsigned char x){return x == ',';}), line.end());
+    ss.str(line);
+}
+
+int nCr(int n, int r) {
+    if (r == 0 || r == n) {
+        return 1;
+    } else {
+        return nCr(n - 1, r - 1) + nCr(n - 1, r);
+    }
+}
+
+double blend(double u, double v, const vector<vector<vector<float>>>& controlPoints, int i, int j) {
+    int n = controlPoints.size() - 1;
+    int m = controlPoints[0].size() - 1;
+
+    double bi = 1.0;
+    double bj = 1.0;
+
+    // Calculate Bernstein polynomials
+    for (int k = 0; k <= n; ++k) {
+        bi *= (double)std::pow(u, k) * (double)std::pow(1 - u, n - k) * (double)nCr(n, k);
+    }
+    for (int l = 0; l <= m; ++l) {
+        bj *= (double)std::pow(v, l) * (double)std::pow(1 - v, m - l) * (double)nCr(m, l);
+    }
+
+    return bi * bj;
+}
+
+list<string> bezierSurfacePoint(double u, double v, const vector<vector<vector<float>>> controlPoints) {
+    int n = controlPoints.size();
+    int m = controlPoints[0].size();
+    list<string> point; // Assuming 3D points
+    stringstream p;
+    float x,y,z;
+    double b;
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            b = blend(u, v, controlPoints, i, j);
+            x = b * controlPoints[i][j][0];
+            y = b * controlPoints[i][j][1];
+            z = b * controlPoints[i][j][2];
+            p << x << " " << y << " " << z;
+            point.emplace_back(p.str());
+            p.str("");
+        }
+    }
+
+    return point;
+}
+
+void patches(char* patchFile, int tessellation ,char* filename)
+{
+    ifstream patch;
+    patch.open(patchFile);
+    int nControl, nPoints;
+    patch >> nControl;
+    vector<vector<vector<float>>> controlPoints;
+    map<int, vector<int>> pointIndex;
+    string line;
+    stringstream ss;
+    int c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16;
+    //Preparar matriz
+    for(int i = 0; i < nControl; i++)
+    {
+        fixLine(patch, line, ss);
+        ss >> c1 >> c2 >> c3 >> c4 >> c5 >> c6 >> c7 >> c8 >> c9 >> c10 >> c11 >> c12 >> c13 >> c14 >> c15 >> c16;
+        vector<int> aux = {c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11};
+        for(int j = 0; j < 16; j++)
+        {
+            pointIndex[aux[j]] = {i, j};
+        }
+    }
+    getline(patch, line);
+    nPoints = stoi(line);
+    float x,y,z;
+    vector<int> index;
+    //Colocar pontos na matriz
+    for(int i = 0; i < nPoints; i++)
+    {
+        fixLine(patch, line, ss);
+        ss >> x >> y >> z;
+        index = pointIndex[i];
+        controlPoints[index[0]][index[1]][0] = x;
+        controlPoints[index[0]][index[1]][1] = y;
+        controlPoints[index[0]][index[1]][2] = z;
+    }
+
+    double u, v;
+    for(int i = 0; i < nControl; i++)
+    {
+        for(int j = 0; j < 16; j++)
+        {
+            u = i / (tessellation - 1);
+            v = j / (tessellation - 1);
+        }
+    }
+}
+
 int main(int argc, char* argv[])
 {
     if (argc < 2)
@@ -389,6 +497,15 @@ int main(int argc, char* argv[])
         }
         cone(stod(argv[2]), stod(argv[3]), stoi(argv[4]),
              stoi(argv[5]) + 1, argv[6]);
+    }
+    else if (strcmp(argv[1], "patch") == 0)
+    {
+        if(argc != 5)
+        {
+            printArgumentError();
+            return 0;
+        }
+        patches(argv[2], stoi(argv[3]), argv[4]);
     }
     else
     {
