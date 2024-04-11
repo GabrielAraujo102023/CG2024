@@ -9,9 +9,7 @@
 #include <list>
 #include <sstream>
 #include <cmath>
-#include <vector>
-#include <map>
-#include <algorithm>
+#include <iostream>
 using namespace std;
 void printArgumentError()
 {
@@ -348,109 +346,116 @@ void cone(float radius, float height, int slices, int stacks, char* filename)
     saveFile(filename, pointList, "cone", false);
 }
 
-void fixLine(ifstream &patch, string line, stringstream &ss)
-{
-    getline(patch, line);
-    //Remove as vírgulas
-    line.erase(std::remove_if(line.begin(), line.end(),[](unsigned char x){return x == ',';}), line.end());
-    ss.str(line);
-}
+float getBezierPoint(float u, float v, int coord, float ** vertices, int * indices) {
+    float pointValue = 0;
 
-int nCr(int n, int r) {
-    if (r == 0 || r == n) {
-        return 1;
-    } else {
-        return nCr(n - 1, r - 1) + nCr(n - 1, r);
-    }
-}
+    float bu[4][1] = { { powf(1 - u, 3) },{ 3 * u * powf(1 - u, 2) },{ 3 * powf(u, 2) * (1 - u) },{ powf(u, 3) } };
+    float bv[4][1] = { { powf(1 - v, 3) },{ 3 * v * powf(1 - v, 2) },{ 3 * powf(v, 2) * (1 - v) },{ powf(v, 3) } };
 
-double blend(double u, double v, const vector<vector<vector<float>>>& controlPoints, int i, int j) {
-    int n = controlPoints.size() - 1;
-    int m = controlPoints[0].size() - 1;
-
-    double bi = 1.0;
-    double bj = 1.0;
-
-    // Calculate Bernstein polynomials
-    for (int k = 0; k <= n; ++k) {
-        bi *= (double)std::pow(u, k) * (double)std::pow(1 - u, n - k) * (double)nCr(n, k);
-    }
-    for (int l = 0; l <= m; ++l) {
-        bj *= (double)std::pow(v, l) * (double)std::pow(1 - v, m - l) * (double)nCr(m, l);
-    }
-
-    return bi * bj;
-}
-
-list<string> bezierSurfacePoint(double u, double v, const vector<vector<vector<float>>> controlPoints) {
-    int n = controlPoints.size();
-    int m = controlPoints[0].size();
-    list<string> point; // Assuming 3D points
-    stringstream p;
-    float x,y,z;
-    double b;
-
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            b = blend(u, v, controlPoints, i, j);
-            x = b * controlPoints[i][j][0];
-            y = b * controlPoints[i][j][1];
-            z = b * controlPoints[i][j][2];
-            p << x << " " << y << " " << z;
-            point.emplace_back(p.str());
-            p.str("");
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            pointValue += vertices[indices[j + 4 * i]][coord] * bu[i][0] * bv[j][0];
         }
     }
-
-    return point;
+    return pointValue;
 }
 
-void patches(char* patchFile, int tessellation ,char* filename)
-{
-    ifstream patch;
-    patch.open(patchFile);
-    int nControl, nPoints;
-    patch >> nControl;
-    vector<vector<vector<float>>> controlPoints;
-    map<int, vector<int>> pointIndex;
+list<string> renderPatch(float ** controlPoints, int patches, int ** indices, float tessel) {
+    float x, y, z;
+    float v, u;
+    stringstream ret;
+    list<string> pointList;
+    float tesselation = 1.0 / tessel;
+    for (int patch = 0; patch < patches; patch++) {
+        int * indicesPatch = indices[patch];
+        for (v = 0; v < 1; v += tesselation) {
+            for (u = 0; u < 1; u += tesselation) {
+                x = getBezierPoint(u, v, 0, controlPoints, indicesPatch);
+                y = getBezierPoint(u, v, 1, controlPoints, indicesPatch);
+                z = getBezierPoint(u, v, 2, controlPoints, indicesPatch);
+                ret << x << " " << y << " " << z;
+                pointList.emplace_back(ret.str());
+                ret.str("");
+                x = getBezierPoint(u + tesselation, v, 0, controlPoints, indicesPatch);
+                y = getBezierPoint(u + tesselation, v, 1, controlPoints, indicesPatch);
+                z = getBezierPoint(u + tesselation, v, 2, controlPoints, indicesPatch);
+                ret << x << " " << y << " " << z ;
+                pointList.emplace_back(ret.str());
+                ret.str("");
+                x = getBezierPoint(u, v + tesselation, 0, controlPoints, indicesPatch);
+                y = getBezierPoint(u, v + tesselation, 1, controlPoints, indicesPatch);
+                z = getBezierPoint(u, v + tesselation, 2, controlPoints, indicesPatch);
+                ret << x << " " << y << " " << z ;
+                pointList.emplace_back(ret.str());
+                ret.str("");
+                x = getBezierPoint(u, v + tesselation, 0, controlPoints, indicesPatch);
+                y = getBezierPoint(u, v + tesselation, 1, controlPoints, indicesPatch);
+                z = getBezierPoint(u, v + tesselation, 2, controlPoints, indicesPatch);
+                ret << x << " " << y << " " << z ;
+                pointList.emplace_back(ret.str());
+                ret.str("");
+                x = getBezierPoint(u + tesselation, v, 0, controlPoints, indicesPatch);
+                y = getBezierPoint(u + tesselation, v, 1, controlPoints, indicesPatch);
+                z = getBezierPoint(u + tesselation, v, 2, controlPoints, indicesPatch);
+                ret << x << " " << y << " " << z ;
+                pointList.emplace_back(ret.str());
+                ret.str("");
+                x = getBezierPoint(u + tesselation, v + tesselation, 0, controlPoints, indicesPatch);
+                y = getBezierPoint(u + tesselation, v + tesselation, 1, controlPoints, indicesPatch);
+                z = getBezierPoint(u + tesselation, v + tesselation, 2, controlPoints, indicesPatch);
+                ret << x << " " << y << " " << z ;
+                pointList.emplace_back(ret.str());
+                ret.str("");
+            }
+        }
+    }
+    return pointList;
+}
+
+void patches(string patchFile, float tessellation, char* filename) {
     string line;
-    stringstream ss;
-    int c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16;
-    //Preparar matriz
-    for(int i = 0; i < nControl; i++)
-    {
-        fixLine(patch, line, ss);
-        ss >> c1 >> c2 >> c3 >> c4 >> c5 >> c6 >> c7 >> c8 >> c9 >> c10 >> c11 >> c12 >> c13 >> c14 >> c15 >> c16;
-        vector<int> aux = {c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11};
-        for(int j = 0; j < 16; j++)
-        {
-            pointIndex[aux[j]] = {i, j};
-        }
-    }
-    getline(patch, line);
-    nPoints = stoi(line);
-    float x,y,z;
-    vector<int> index;
-    //Colocar pontos na matriz
-    for(int i = 0; i < nPoints; i++)
-    {
-        fixLine(patch, line, ss);
-        ss >> x >> y >> z;
-        index = pointIndex[i];
-        controlPoints[index[0]][index[1]][0] = x;
-        controlPoints[index[0]][index[1]][1] = y;
-        controlPoints[index[0]][index[1]][2] = z;
+    ifstream infile;
+    int i, j, patches, points, **indices;
+    float **controlPoints;
+    infile.open(patchFile);
+    getline(infile, line);
+    patches = stoi(line);
+    indices = (int **)malloc(sizeof(int*)*patches);
+
+    for (i = 0; i < patches; i++) {
+        indices[i] = (int *)malloc(sizeof(int) * 16);
     }
 
-    double u, v;
-    for(int i = 0; i < nControl; i++)
-    {
-        for(int j = 0; j < 16; j++)
-        {
-            u = i / (tessellation - 1);
-            v = j / (tessellation - 1);
+    for (i = 0; i < patches; i++) {
+        getline(infile, line);
+        std::istringstream ss(line);
+        std::string token;
+        j = 0;
+        while (std::getline(ss, token, ',')) {
+            indices[i][j] = stoi(token);
+            j++;
         }
     }
+    getline(infile, line);
+    points = stoi(line);
+    controlPoints = (float **)malloc(sizeof(float*)*points);
+    for (i = 0; i < points; i++) {
+        controlPoints[i] = (float *)malloc(sizeof(float) * 3);
+    }
+    for (i = 0; i < points; i++) {
+        getline(infile, line);
+        std::istringstream ss(line);
+        std::string token;
+        j = 0;
+        while (std::getline(ss, token, ',')) {
+            controlPoints[i][j] = stof(token);
+            j++;
+        }
+    }
+    list<string> pointList = renderPatch(controlPoints, patches, indices, tessellation);
+    saveFile(filename, pointList, "patches", false);
+    free(indices);
+    free(controlPoints);
 }
 
 int main(int argc, char* argv[])
