@@ -24,7 +24,7 @@ private:
     char **argv;
     static void changeSize(int w, int h);
     static void renderScene();
-    static void drawMyStuff(const Group& rootGroup);
+    static void drawMyStuff(Group& rootGroup);
     static void processSpecialKeys(int key, int xx, int yy);
     static void processKeys(unsigned char c, int xx, int yy);
     static void loadModels(const Group& group);

@@ -81,7 +81,11 @@ list<Group> loadGroups(TiXmlElement* root)
                         {'x', x},
                         {'y', y},
                         {'z', z},
-                        {'t', time}
+                        {'t', time},
+                        {'i', 0}, //Tempo inicial
+                        {'b', 0}, //Bool se ja calculou tempo inicial
+                        {'s', 360.0f / (time * 1000)}, //O quanto deve rodar a cada segundo
+                        {'r', 0}  //Acomulador para os ângulos
                 };
             }
 

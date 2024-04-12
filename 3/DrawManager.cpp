@@ -11,9 +11,6 @@ int startX, startY, tracking = 0;
 int a = 0, b = 45, r = 0;
 float camX, camY, camZ;
 float moveSpeed = 0.5f;
-long max_time, initTime, rotateDuration;
-bool timeCalculated = false;
-float timedRotationAngle = 0, rotationIncrease;
 // Modelo -> (VBO ID, Número de pontos)
 map<string, GLuint[2]> vboIds;
 
@@ -243,9 +240,10 @@ void doCurveTranslation(const Group& rootGroup, map<char, float> values)
 
     glutSwapBuffers();
     t += 0.001;
+    //glutPostRedisplay();
 }
 
-void doTransformations(const Group& rootGroup)
+void doTransformations(Group& rootGroup)
 {
     for(const auto& pair : rootGroup.transformation){
         char type = pair.first;
@@ -268,18 +266,17 @@ void doTransformations(const Group& rootGroup)
                 }
                 else
                 {
-                    if(!timeCalculated)
+                    if(values['b'] == 0)
                     {
-                        initTime = glutGet(GLUT_ELAPSED_TIME);
-                        rotateDuration = values['t'] * 1000;
-                        rotationIncrease = 360.0f / rotateDuration;
-                        timeCalculated = true;
+                        values['i'] = (float) glutGet(GLUT_ELAPSED_TIME);
+                        values['b'] = 1;
                     }
-                    long now = glutGet(GLUT_ELAPSED_TIME);
-                    timedRotationAngle += (now - initTime) * rotationIncrease;
-                    initTime = now;
-                    glRotatef(timedRotationAngle, values['x'], values['y'], values['z']);
+                    float now = (float) glutGet(GLUT_ELAPSED_TIME);
+                    values['r'] += (now - values['i']) * values['s'];
+                    values['i'] = now;
+                    glRotatef(values['r'], values['x'], values['y'], values['z']);
                     glutPostRedisplay();
+                    rootGroup.transformation['r'] = values;
                 }
                 break;
             case 's':
@@ -291,7 +288,7 @@ void doTransformations(const Group& rootGroup)
     }
 }
 
-void DrawManager::drawMyStuff(const Group& rootGroup)
+void DrawManager::drawMyStuff(Group& rootGroup)
 {
     glPushMatrix();
     // Fazer transformações
@@ -306,7 +303,7 @@ void DrawManager::drawMyStuff(const Group& rootGroup)
         glDrawArrays(GL_TRIANGLES, 0, vboIds[model][1]);
     }
 
-    for(const Group& g : rootGroup.groups)
+    for(Group& g : rootGroup.groups)
     {
         DrawManager::drawMyStuff(g);
     }
