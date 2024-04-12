@@ -29,7 +29,7 @@ list<Group> loadGroups(TiXmlElement* root)
             TiXmlElement* translate = transform->FirstChildElement("translate");
             if (translate)
             {
-                float x, y, z, time = -1, align;
+                float x, y, z, time = -1, align, nPoints = 0;
                 string alignAux;
                 translate->QueryFloatAttribute("x", &x);
                 translate->QueryFloatAttribute("y", &y);
@@ -37,11 +37,11 @@ list<Group> loadGroups(TiXmlElement* root)
                 translate->QueryFloatAttribute("time", &time);
                 translate->QueryStringAttribute("align", &alignAux);
 
-                int nPoints = 0;
                 if(!alignAux.empty()){
                     align = alignAux == "true";
-                    vector<float> points = {};
+                    vector<vector<float>> points(40, vector<float>(3));
                     float point_x, point_y, point_z;
+                    int i = 0;
                     for(TiXmlElement* point = translate->FirstChildElement("point");
                         point;
                         point = point->NextSiblingElement("point"))
@@ -49,12 +49,13 @@ list<Group> loadGroups(TiXmlElement* root)
                         point->QueryFloatAttribute("x", &point_x);
                         point->QueryFloatAttribute("y", &point_y);
                         point->QueryFloatAttribute("z", &point_z);
-                        points.emplace_back(point_x);
-                        points.emplace_back(point_y);
-                        points.emplace_back(point_z);
+                        points[i][0] = point_x;
+                        points[i][1] = point_x;
+                        points[i][2] = point_x;
+                        i++;
+                        nPoints++;
                     }
                     GROUP.points[translateId] = points;
-                    nPoints = points.size();
                 }
                 transformation['t'] = {
                                 {'x', x},
@@ -63,7 +64,10 @@ list<Group> loadGroups(TiXmlElement* root)
                                 {'t', time},
                                 {'a', align},
                                 {'i', translateId++},
-                                {'n', nPoints}
+                                {'n', nPoints},
+                                {'1', 0},
+                                {'2', 1},
+                                {'3', 0}
                 };
             }
 

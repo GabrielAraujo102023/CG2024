@@ -62,7 +62,7 @@ void DrawManager::changeSize(int w, int h) {
         instance->windowHeight = 1;
 
     // compute window's aspect ratio
-    float ratio = instance->windowWidth * 1.0 / instance->windowHeight;
+    float ratio = (float) instance->windowWidth * 1.0f / (float) instance->windowHeight;
 
     // Set the projection matrix as current
     glMatrixMode(GL_PROJECTION);
@@ -145,104 +145,6 @@ void multMatrixVector(const float *m, const float *v, float *res) {
 
 }
 
-void getCatmullRomPoint(float t,
-                        const float *p0, const float *p1, const float *p2, const float *p3,
-                        float *pos, float *deriv) {
-    // Catmull-Rom matrix
-
-    float m[4][4] = { {-0.5f, 1.5f, -1.5f, 0.5f},
-                      { 1.0f, -2.5f, 2.0f, -0.5f},
-                      {-0.5f, 0.0f, 0.5f, 0.0f},
-                      { 0.0f, 1.0f, 0.0f, 0.0f}};
-
-
-    float P[4]; // Control point vector
-    float A[4]; // Resultant vector after matrix multiplication
-
-    // Loop through each component (x, y, z)
-    for (int i = 0; i < 3; ++i) {
-        // Extract the control points for this component
-        P[0] = p0[i]; P[1] = p1[i]; P[2] = p2[i]; P[3] = p3[i];
-
-        // Compute vector A = M * P
-        multMatrixVector((float *)m, P, A);
-
-        // Compute pos[i] = T * A
-        pos[i] = ((t * t * t) * A[0]) + ((t * t) * A[1]) + (t * A[2]) + ((1.0f) * A[3]);
-
-        // Compute deriv[i] = T' * A
-        deriv[i] = ((3.0f * t * t) * A[0]) + ((2.0f * t) * A [1]) + (1.0f * A[2]) + (0.0f * A[3]);
-    }
-}
-
-void getGlobalCatmullRomPoint(float gt, float *pos, float *deriv, int nPoints,
-                              float p[][3]) {
-
-    float t = gt * (float) nPoints; // this is the real global t
-    int index = floor(t);  // which segment
-    t = t - (float) index; // where within  the segment
-
-    // indices store the points
-    int indices[4];
-    indices[0] = (index + nPoints-1)%nPoints;
-    indices[1] = (indices[0]+1)%nPoints;
-    indices[2] = (indices[1]+1)%nPoints;
-    indices[3] = (indices[2]+1)%nPoints;
-
-    getCatmullRomPoint(t, p[indices[0]], p[indices[1]], p[indices[2]], p[indices[3]], pos, deriv);
-}
-
-void renderCatmullRomCurve(int nPoints, float points[][3]) {
-    glBegin(GL_LINE_LOOP);
-
-    for (float t = 0; t <= 100; t++) {
-        float pos[3], deriv[3];
-        // Compute the point and its derivative on the curve at parameter t
-        getGlobalCatmullRomPoint(t/100, pos, deriv, nPoints, points);
-        // Render the interpolated point
-        glVertex3f(pos[0], pos[1], pos[2]);
-    }
-
-    glEnd();
-}
-
-void doCurveTranslation(const Group& rootGroup, map<char, float> values)
-{
-    static float t = 0;
-    float pos[3], deriv[3];
-    int nPoints = (int) values['n'] / 3;
-    float p[nPoints][3];
-    int j = 0;
-    for(int i = 0; i < nPoints; i++, j += 3)
-    {
-        p[i][0] = rootGroup.points.at((int) values['i'])[j];
-        p[i][1] = rootGroup.points.at((int) values['i'])[j + 1];
-        p[i][2] = rootGroup.points.at((int) values['i'])[j + 2];
-    }
-    renderCatmullRomCurve(nPoints, p);
-    getGlobalCatmullRomPoint(t, pos, deriv, (int)values['n'], p);
-    glTranslatef(pos[0], pos[1], pos[2]);
-    // Align
-    if (values['a'] == 1)
-    {
-        float zaxis[3];
-        float yaxis[3] = {0, 1, 0};
-        cross(deriv, yaxis, zaxis);
-        cross(zaxis, deriv, yaxis);
-        normalize(deriv);
-        normalize(yaxis);
-        normalize(zaxis);
-
-        float rotationMatrix[16];
-        buildRotMatrix(deriv, yaxis, zaxis, rotationMatrix);
-        glMultMatrixf(rotationMatrix);
-    }
-
-    glutSwapBuffers();
-    t += 0.001;
-    //glutPostRedisplay();
-}
-
 void doTransformations(Group& rootGroup)
 {
     for(const auto& pair : rootGroup.transformation){
@@ -256,7 +158,70 @@ void doTransformations(Group& rootGroup)
                 }
                 else
                 {
-                    doCurveTranslation(rootGroup, values);
+                    int nPoints = (int) values['n'];
+                    float t = (float) nPoints * ((float) glutGet(GLUT_ELAPSED_TIME) / 1000.0f) / values['t'];
+                    int index = floor(t);
+                    t = t - (float) index;
+
+                    int indices[4];
+                    indices[0] = (index + nPoints-1)%nPoints;
+                    indices[1] = (indices[0]+1)%nPoints;
+                    indices[2] = (indices[1]+1)%nPoints;
+                    indices[3] = (indices[2]+1)%nPoints;
+
+                    float m[4][4] = {	{-0.5f,  1.5f, -1.5f,  0.5f},
+                                         { 1.0f, -2.5f,  2.0f, -0.5f},
+                                         {-0.5f,  0.0f,  0.5f,  0.0f},
+                                         { 0.0f,  1.0f,  0.0f,  0.0f}};
+
+                    float pos[3];
+                    float deriv[3];
+                    vector<vector<float>> points = rootGroup.points.at((int) values['i']);
+
+                    for(int i = 0; i < 3; i++)
+                    {
+                        float p[4] = {
+                                points[indices[0]][i],
+                                points[indices[1]][i],
+                                points[indices[2]][i],
+                                points[indices[3]][i],
+                        };
+                        float A[4];
+
+                        multMatrixVector(reinterpret_cast<const float *>(m), p, A);
+                        pos[i] = pow(t,3.0f) * A[0] + pow(t,2.0f) * A[1] + t * A[2] + A[3];
+                        deriv[i] = 3.0f * pow(t,2.0f) * A[0] + 2.0f * t * A[1] + A[2];
+                    }
+                    glTranslatef(pos[0], pos[1], pos[2]);
+                    glBegin(GL_LINE_LOOP);
+                    glVertex3f(pos[0], pos[1], pos[2]);
+                    glEnd();
+                    // Align
+                    if (values['a'] == 1)
+                    {
+                        float prev_y[3] = {values['1'], values['2'], values['3']};
+                        glTranslated(pos[0],pos[1],pos[2]);
+                        float x[3] = {deriv[0], deriv[1], deriv[2]};
+                        normalize(x);
+                        float z[3];
+                        cross(x, prev_y, z);
+                        normalize(z);
+                        float y[3];
+                        cross(z,x,y);
+                        normalize(y);
+                        values['1'] = y[0];
+                        values['2'] = y[1];
+                        values['3'] = y[2];
+                        rootGroup.transformation['t'] = values;
+
+                        float rotm[16];
+
+                        buildRotMatrix(x,y,z,rotm);
+
+                        glMultMatrixf(rotm);
+                    }
+                    glutSwapBuffers();
+                    //glutPostRedisplay();
                 }
                 break;
             case 'r':
@@ -271,7 +236,7 @@ void doTransformations(Group& rootGroup)
                         values['i'] = (float) glutGet(GLUT_ELAPSED_TIME);
                         values['b'] = 1;
                     }
-                    float now = (float) glutGet(GLUT_ELAPSED_TIME);
+                    auto now = (float) glutGet(GLUT_ELAPSED_TIME);
                     values['r'] += (now - values['i']) * values['s'];
                     values['i'] = now;
                     glRotatef(values['r'], values['x'], values['y'], values['z']);
@@ -426,9 +391,9 @@ void processMouseMotion(int xx, int yy) {
         if (rAux < 3)
             rAux = 3;
     }
-    camX = rAux * sin(alphaAux * 3.14 / 180.0) * cos(betaAux * 3.14 / 180.0);
-    camZ = rAux * cos(alphaAux * 3.14 / 180.0) * cos(betaAux * 3.14 / 180.0);
-    camY = rAux * sin(betaAux * 3.14 / 180.0);
+    camX = (float) rAux * sin((float) alphaAux * 3.14f / 180.0f) * cos((float) betaAux * 3.14f / 180.0f);
+    camZ = (float )rAux * cos((float) alphaAux * 3.14f / 180.0f) * cos((float) betaAux * 3.14f / 180.0f);
+    camY = (float )rAux * sin((float) betaAux * 3.14f / 180.0f);
     glutPostRedisplay();
 }
 
