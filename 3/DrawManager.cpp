@@ -11,6 +11,9 @@ int startX, startY, tracking = 0;
 int a = 0, b = 45, r = 0;
 float camX, camY, camZ;
 float moveSpeed = 0.5f;
+long max_time, initTime, rotateDuration;
+bool timeCalculated = false;
+float timedRotationAngle = 0, rotationIncrease;
 // Modelo -> (VBO ID, Número de pontos)
 map<string, GLuint[2]> vboIds;
 
@@ -18,7 +21,7 @@ void update(int value) {
     int elapsedTime = glutGet(GLUT_ELAPSED_TIME);
     int deltaTime = elapsedTime - previousTime;
     if (deltaTime > 1000) {
-        float fps = frameCount / (deltaTime / 1000.0f);
+        float fps = (float) frameCount / ((float) deltaTime / 1000.0f);
 
         ostringstream windowTitle;
         windowTitle << fps;
@@ -110,20 +113,174 @@ void DrawManager::renderScene() {
     glutSwapBuffers();
 }
 
-void DrawManager::drawMyStuff(const Group& rootGroup)
+void buildRotMatrix(const float *x, const float *y, const float *z, float *m) {
+
+    m[0] = x[0]; m[1] = x[1]; m[2] = x[2]; m[3] = 0;
+    m[4] = y[0]; m[5] = y[1]; m[6] = y[2]; m[7] = 0;
+    m[8] = z[0]; m[9] = z[1]; m[10] = z[2]; m[11] = 0;
+    m[12] = 0; m[13] = 0; m[14] = 0; m[15] = 1;
+}
+
+void cross(const float *aa, const float *bb, float *res) {
+
+    res[0] = aa[1]*bb[2] - aa[2]*bb[1];
+    res[1] = aa[2]*bb[0] - aa[0]*bb[2];
+    res[2] = aa[0]*bb[1] - aa[1]*bb[0];
+}
+
+
+void normalize(float *aa) {
+
+    float l = sqrt(aa[0] * aa[0] + aa[1] * aa[1] + aa[2] * aa[2]);
+    aa[0] = aa[0] / l;
+    aa[1] = aa[1] / l;
+    aa[2] = aa[2] / l;
+}
+
+void multMatrixVector(const float *m, const float *v, float *res) {
+
+    for (int j = 0; j < 4; ++j) {
+        res[j] = 0;
+        for (int k = 0; k < 4; ++k) {
+            res[j] += v[k] * m[j * 4 + k];
+        }
+    }
+
+}
+
+void getCatmullRomPoint(float t,
+                        const float *p0, const float *p1, const float *p2, const float *p3,
+                        float *pos, float *deriv) {
+    // Catmull-Rom matrix
+
+    float m[4][4] = { {-0.5f, 1.5f, -1.5f, 0.5f},
+                      { 1.0f, -2.5f, 2.0f, -0.5f},
+                      {-0.5f, 0.0f, 0.5f, 0.0f},
+                      { 0.0f, 1.0f, 0.0f, 0.0f}};
+
+
+    float P[4]; // Control point vector
+    float A[4]; // Resultant vector after matrix multiplication
+
+    // Loop through each component (x, y, z)
+    for (int i = 0; i < 3; ++i) {
+        // Extract the control points for this component
+        P[0] = p0[i]; P[1] = p1[i]; P[2] = p2[i]; P[3] = p3[i];
+
+        // Compute vector A = M * P
+        multMatrixVector((float *)m, P, A);
+
+        // Compute pos[i] = T * A
+        pos[i] = ((t * t * t) * A[0]) + ((t * t) * A[1]) + (t * A[2]) + ((1.0f) * A[3]);
+
+        // Compute deriv[i] = T' * A
+        deriv[i] = ((3.0f * t * t) * A[0]) + ((2.0f * t) * A [1]) + (1.0f * A[2]) + (0.0f * A[3]);
+    }
+}
+
+void getGlobalCatmullRomPoint(float gt, float *pos, float *deriv, int nPoints,
+                              float p[][3]) {
+
+    float t = gt * (float) nPoints; // this is the real global t
+    int index = floor(t);  // which segment
+    t = t - (float) index; // where within  the segment
+
+    // indices store the points
+    int indices[4];
+    indices[0] = (index + nPoints-1)%nPoints;
+    indices[1] = (indices[0]+1)%nPoints;
+    indices[2] = (indices[1]+1)%nPoints;
+    indices[3] = (indices[2]+1)%nPoints;
+
+    getCatmullRomPoint(t, p[indices[0]], p[indices[1]], p[indices[2]], p[indices[3]], pos, deriv);
+}
+
+void renderCatmullRomCurve(int nPoints, float points[][3]) {
+    glBegin(GL_LINE_LOOP);
+
+    for (float t = 0; t <= 100; t++) {
+        float pos[3], deriv[3];
+        // Compute the point and its derivative on the curve at parameter t
+        getGlobalCatmullRomPoint(t/100, pos, deriv, nPoints, points);
+        // Render the interpolated point
+        glVertex3f(pos[0], pos[1], pos[2]);
+    }
+
+    glEnd();
+}
+
+void doCurveTranslation(const Group& rootGroup, map<char, float> values)
 {
-    glPushMatrix();
-    // Fazer transformações
+    static float t = 0;
+    float pos[3], deriv[3];
+    int nPoints = (int) values['n'] / 3;
+    float p[nPoints][3];
+    int j = 0;
+    for(int i = 0; i < nPoints; i++, j += 3)
+    {
+        p[i][0] = rootGroup.points.at((int) values['i'])[j];
+        p[i][1] = rootGroup.points.at((int) values['i'])[j + 1];
+        p[i][2] = rootGroup.points.at((int) values['i'])[j + 2];
+    }
+    renderCatmullRomCurve(nPoints, p);
+    getGlobalCatmullRomPoint(t, pos, deriv, (int)values['n'], p);
+    glTranslatef(pos[0], pos[1], pos[2]);
+    // Align
+    if (values['a'] == 1)
+    {
+        float zaxis[3];
+        float yaxis[3] = {0, 1, 0};
+        cross(deriv, yaxis, zaxis);
+        cross(zaxis, deriv, yaxis);
+        normalize(deriv);
+        normalize(yaxis);
+        normalize(zaxis);
+
+        float rotationMatrix[16];
+        buildRotMatrix(deriv, yaxis, zaxis, rotationMatrix);
+        glMultMatrixf(rotationMatrix);
+    }
+
+    glutSwapBuffers();
+    t += 0.001;
+}
+
+void doTransformations(const Group& rootGroup)
+{
     for(const auto& pair : rootGroup.transformation){
         char type = pair.first;
         map<char, float> values = pair.second;
-
         switch (type){
             case 't':
-                glTranslatef(values['x'], values['y'], values['z']);
+                if(values['t'] == -1)
+                {
+                    glTranslatef(values['x'], values['y'], values['z']);
+                }
+                else
+                {
+                    doCurveTranslation(rootGroup, values);
+                }
                 break;
             case 'r':
-                glRotatef(values['a'], values['x'], values['y'], values['z']);
+                if(values['t'] == -1)
+                {
+                    glRotatef(values['a'], values['x'], values['y'], values['z']);
+                }
+                else
+                {
+                    if(!timeCalculated)
+                    {
+                        initTime = glutGet(GLUT_ELAPSED_TIME);
+                        rotateDuration = values['t'] * 1000;
+                        rotationIncrease = 360.0f / rotateDuration;
+                        timeCalculated = true;
+                    }
+                    long now = glutGet(GLUT_ELAPSED_TIME);
+                    timedRotationAngle += (now - initTime) * rotationIncrease;
+                    initTime = now;
+                    glRotatef(timedRotationAngle, values['x'], values['y'], values['z']);
+                    glutPostRedisplay();
+                }
                 break;
             case 's':
                 glScalef(values['x'], values['y'], values['z']);
@@ -132,6 +289,13 @@ void DrawManager::drawMyStuff(const Group& rootGroup)
                 break;
         }
     }
+}
+
+void DrawManager::drawMyStuff(const Group& rootGroup)
+{
+    glPushMatrix();
+    // Fazer transformações
+    doTransformations(rootGroup);
 
     // Desenhar modelos
     glColor3f(1,1,1);
@@ -189,7 +353,7 @@ void DrawManager::processKeys(unsigned char c, int xx, int yy) {
         default:
             break;
     }
-    r = sqrt(camX * camX + camY * camY + camZ * camZ);
+    r = (int) sqrt(camX * camX + camY * camY + camZ * camZ);
     glutPostRedisplay();
 }
 
@@ -292,9 +456,9 @@ void DrawManager::Draw() {
     camX = this->px;
     camY = this->py;
     camZ = this->pz;
-    r = sqrt(this->px * this->px + this->py * this->py + this->pz * this->pz);
-    a = acos(instance->pz / r);
-    b = atan2(instance->py, instance->px);
+    r = (int) sqrt(this->px * this->px + this->py * this->py + this->pz * this->pz);
+    a = (int) acos(instance->pz / (float) r);
+    b = (int) atan2(instance->py, instance->px);
 
     glewInit();
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -336,7 +500,7 @@ void DrawManager::loadModels(const Group& group) {
     }
 }
 
-void DrawManager::initVBO(vector<GLfloat> vertex, string model) {
+void DrawManager::initVBO(vector<GLfloat> vertex, const string& model) {
     GLuint id;
     unsigned int size = vertex.size();
     glGenBuffers(1, &id);

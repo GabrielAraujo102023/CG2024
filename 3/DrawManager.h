@@ -28,7 +28,7 @@ private:
     static void processSpecialKeys(int key, int xx, int yy);
     static void processKeys(unsigned char c, int xx, int yy);
     static void loadModels(const Group& group);
-    static void initVBO(vector<GLfloat> vertex, string model);
+    static void initVBO(vector<GLfloat> vertex, const string& model);
     //static void initAxisVBO();
     //static void drawAxis();
     list<Group> rootGroup;

@@ -16,9 +16,9 @@ CMake Warning (dev) at /home/gabriel/CLion-2023.3.3/clion-2023.3.3/bin/cmake/lin
   OpenGL_GL_PREFERENCE has not been set to "GLVND" or "LEGACY", so for
   compatibility with CMake 3.10 and below the legacy GL library will be used.
 Call Stack (most recent call first):
-  CMakeLists.txt:19 (find_package)
+  CMakeLists.txt:23 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
--- Configuring done (4.1s)
--- Generating done (0.2s)
+-- Configuring done (0.3s)
+-- Generating done (0.0s)
 -- Build files have been written to: /home/gabriel/Desktop/aulas/CG/CG2024/3/cmake-build-debug

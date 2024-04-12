@@ -9,7 +9,7 @@ Group::Group() {
 }
 
 Group::Group(map<char, map<char, float>> transformation, list<string> models, list<Group> groups,
-             map<int, vector<int>> points) {
+             map<int, vector<float>> points) {
     this->transformation = std::move(transformation);
     this->models = std::move(models);
     this->groups = std::move(groups);

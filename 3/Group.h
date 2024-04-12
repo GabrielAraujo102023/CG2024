@@ -11,12 +11,12 @@ using namespace std;
 class Group {
 public:
     Group(map<char,map<char, float>> transformation, list<string> models, list<Group> groups,
-          map<int, vector<int>> points);
+          map<int, vector<float>> points);
     Group();
     map<char,map<char, float>> transformation;
     list<string> models;
     list<Group> groups;
-    map<int, vector<int>> points;
+    map<int, vector<float>> points;
 };
 
 
