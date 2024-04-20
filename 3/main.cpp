@@ -50,8 +50,8 @@ list<Group> loadGroups(TiXmlElement* root)
                         point->QueryFloatAttribute("y", &point_y);
                         point->QueryFloatAttribute("z", &point_z);
                         points[i][0] = point_x;
-                        points[i][1] = point_x;
-                        points[i][2] = point_x;
+                        points[i][1] = point_y;
+                        points[i][2] = point_z;
                         i++;
                         nPoints++;
                     }
@@ -64,10 +64,7 @@ list<Group> loadGroups(TiXmlElement* root)
                                 {'t', time},
                                 {'a', align},
                                 {'i', translateId++},
-                                {'n', nPoints},
-                                {'1', 0},
-                                {'2', 1},
-                                {'3', 0}
+                                {'n', nPoints}
                 };
             }
 

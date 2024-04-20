@@ -11,6 +11,12 @@ int startX, startY, tracking = 0;
 int a = 0, b = 45, r = 0;
 float camX, camY, camZ;
 float moveSpeed = 0.5f;
+
+float m[4][4] = {	{-0.5f,  1.5f, -1.5f,  0.5f},
+                     { 1.0f, -2.5f,  2.0f, -0.5f},
+                     {-0.5f,  0.0f,  0.5f,  0.0f},
+                     { 0.0f,  1.0f,  0.0f,  0.0f}};
+float yaxis[3] = {0, 1, 0};
 // Modelo -> (VBO ID, Número de pontos)
 map<string, GLuint[2]> vboIds;
 
@@ -145,11 +151,66 @@ void multMatrixVector(const float *m, const float *v, float *res) {
 
 }
 
+void renderCurve(Group& rootGroup)
+{
+    map<char, float> values;
+    try
+    {
+        values = rootGroup.transformation.at('t');
+    }
+    catch (out_of_range e)
+    {
+        return;
+    }
+    if (values['n'] == 0)
+        return;
+    vector<vector<float>> points = rootGroup.points.at((int) values['i']);
+    glBegin(GL_LINE_LOOP);
+    int nPoints = (int) values['n'];
+    float T;
+    int index;
+    float pos[3];
+    for (int t = 0; t <= 100; t++) {
+        T = (t / 100.0f) * nPoints;
+        index = floor(T);
+        T = T - index;
+
+        int indices[4];
+        indices[0] = (index + nPoints-1)%nPoints;
+        indices[1] = (indices[0]+1)%nPoints;
+        indices[2] = (indices[1]+1)%nPoints;
+        indices[3] = (indices[2]+1)%nPoints;
+
+        for(int i = 0; i < 3; i++)
+        {
+            float p[4] = {
+                    points[indices[0]][i],
+                    points[indices[1]][i],
+                    points[indices[2]][i],
+                    points[indices[3]][i],
+            };
+            float A[4];
+
+            multMatrixVector(reinterpret_cast<const float *>(m), p, A);
+            pos[i] = ((T * T * T) * A[0]) + ((T * T) * A[1]) + (T * A[2]) + ((1.0f) * A[3]);
+        }
+        glVertex3f(pos[0], pos[1], pos[2]);
+    }
+    glEnd();
+}
+
 void doTransformations(Group& rootGroup)
 {
-    for(const auto& pair : rootGroup.transformation){
-        char type = pair.first;
-        map<char, float> values = pair.second;
+    char transformations[3] = {'t', 'r', 's'};
+    map<char, float> values;
+    for(char type: transformations){
+        try {
+            values = rootGroup.transformation.at(type);
+        }
+        catch (out_of_range e)
+        {
+            continue;
+        }
         switch (type){
             case 't':
                 if(values['t'] == -1)
@@ -159,7 +220,7 @@ void doTransformations(Group& rootGroup)
                 else
                 {
                     int nPoints = (int) values['n'];
-                    float t = (float) nPoints * ((float) glutGet(GLUT_ELAPSED_TIME) / 1000.0f) / values['t'];
+                    float t = nPoints * (glutGet(GLUT_ELAPSED_TIME) / 1000.0 / values['t']);
                     int index = floor(t);
                     t = t - (float) index;
 
@@ -168,11 +229,6 @@ void doTransformations(Group& rootGroup)
                     indices[1] = (indices[0]+1)%nPoints;
                     indices[2] = (indices[1]+1)%nPoints;
                     indices[3] = (indices[2]+1)%nPoints;
-
-                    float m[4][4] = {	{-0.5f,  1.5f, -1.5f,  0.5f},
-                                         { 1.0f, -2.5f,  2.0f, -0.5f},
-                                         {-0.5f,  0.0f,  0.5f,  0.0f},
-                                         { 0.0f,  1.0f,  0.0f,  0.0f}};
 
                     float pos[3];
                     float deriv[3];
@@ -189,39 +245,25 @@ void doTransformations(Group& rootGroup)
                         float A[4];
 
                         multMatrixVector(reinterpret_cast<const float *>(m), p, A);
-                        pos[i] = pow(t,3.0f) * A[0] + pow(t,2.0f) * A[1] + t * A[2] + A[3];
-                        deriv[i] = 3.0f * pow(t,2.0f) * A[0] + 2.0f * t * A[1] + A[2];
+                        pos[i] = ((t * t * t) * A[0]) + ((t * t) * A[1]) + (t * A[2]) + A[3];
+                        deriv[i] = 3.0f * t*t * A[0] + 2.0f * t * A[1] + A[2];
                     }
                     glTranslatef(pos[0], pos[1], pos[2]);
-                    glBegin(GL_LINE_LOOP);
-                    glVertex3f(pos[0], pos[1], pos[2]);
-                    glEnd();
                     // Align
                     if (values['a'] == 1)
                     {
-                        float prev_y[3] = {values['1'], values['2'], values['3']};
-                        glTranslated(pos[0],pos[1],pos[2]);
-                        float x[3] = {deriv[0], deriv[1], deriv[2]};
-                        normalize(x);
-                        float z[3];
-                        cross(x, prev_y, z);
-                        normalize(z);
-                        float y[3];
-                        cross(z,x,y);
-                        normalize(y);
-                        values['1'] = y[0];
-                        values['2'] = y[1];
-                        values['3'] = y[2];
-                        rootGroup.transformation['t'] = values;
+                        float zaxis[3];
+                        cross(deriv, yaxis, zaxis);
+                        cross(zaxis, deriv, yaxis);
+                        normalize(deriv);
+                        normalize(yaxis);
+                        normalize(zaxis);
 
-                        float rotm[16];
+                        float rotationMatrix[16];
+                        buildRotMatrix(deriv, yaxis, zaxis, rotationMatrix);
 
-                        buildRotMatrix(x,y,z,rotm);
-
-                        glMultMatrixf(rotm);
+                        glMultMatrixf(rotationMatrix);
                     }
-                    glutSwapBuffers();
-                    //glutPostRedisplay();
                 }
                 break;
             case 'r':
@@ -240,7 +282,6 @@ void doTransformations(Group& rootGroup)
                     values['r'] += (now - values['i']) * values['s'];
                     values['i'] = now;
                     glRotatef(values['r'], values['x'], values['y'], values['z']);
-                    glutPostRedisplay();
                     rootGroup.transformation['r'] = values;
                 }
                 break;
@@ -256,6 +297,8 @@ void doTransformations(Group& rootGroup)
 void DrawManager::drawMyStuff(Group& rootGroup)
 {
     glPushMatrix();
+
+    renderCurve(rootGroup);
     // Fazer transformações
     doTransformations(rootGroup);
 
@@ -406,6 +449,8 @@ void DrawManager::Draw() {
     // Required callback registry
     ::glutDisplayFunc(renderScene);
     ::glutReshapeFunc(changeSize);
+    glutIdleFunc(renderScene);
+    glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
 
     // Callback registration for keyboard processing
     glutKeyboardFunc(processKeys);
