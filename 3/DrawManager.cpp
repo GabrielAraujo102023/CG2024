@@ -273,10 +273,9 @@ void doTransformations(Group& rootGroup)
                 }
                 else
                 {
-                    if(values['b'] == 0)
+                    if(values['i'] == 0)
                     {
                         values['i'] = (float) glutGet(GLUT_ELAPSED_TIME);
-                        values['b'] = 1;
                     }
                     auto now = (float) glutGet(GLUT_ELAPSED_TIME);
                     values['r'] += (now - values['i']) * values['s'];
