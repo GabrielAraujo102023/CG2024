@@ -297,16 +297,35 @@ void cone(float radius, float height, int slices, int stacks, char* filename)
 {
     list<string> pointList;
     stringstream p;
-    pointList.emplace_back("0 0 0");
 
-    for (int i = 0; i <= slices; ++i) {
-        float angle = (i / (float)slices) * 2.0f * M_PI;
-        p << radius * cos(angle) << " 0 " << radius * sin(angle);
+    for (int i = 0; i < slices; ++i) {
+        float angle1 = 2.0f * M_PI * i / slices;
+        float angle2 = 2.0f * M_PI * (i + 1) / slices;
+
+        // Add center vertex (0, 0, 0)
+        pointList.emplace_back("0 0 0");
+
+        // First triangle vertex
+        p << radius * cos(angle2) << " 0 " << radius * sin(angle2);
+        pointList.emplace_back(p.str());
+        p.str("");
+
+        // Second triangle vertex
+        p << radius * cos(angle1) << " 0 " << radius * sin(angle1);
+        pointList.emplace_back(p.str());
+        p.str("");
+
+        // Third triangle vertex (repeated for next triangle)
+        p << radius * cos(angle1) << " 0 " << radius * sin(angle1);
+        pointList.emplace_back(p.str());
+        p.str("");
+
+        // Fourth triangle vertex (repeated for next triangle)
+        p << radius * cos(angle2) << " 0 " << radius * sin(angle2);
         pointList.emplace_back(p.str());
         p.str("");
     }
 
-    pointList.emplace_back("triang");
     stacks--;
     float stackHeight = height / stacks;
     float stackRadius = radius / stacks;
