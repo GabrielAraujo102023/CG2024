@@ -88,6 +88,17 @@ void DrawManager::changeSize(int w, int h) {
 void DrawManager::renderScene() {
     GLenum light_id;
     int i = 0;
+
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    // clear buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // set the camera
+    glLoadIdentity();
+    gluLookAt(camX,camY,camZ,
+              instance->lx,instance->ly,instance->lz,
+              instance->ux,instance->uy,instance->uz);
+
     for(const Light& light : instance->lights) {
         light_id = 0x4000 + i;
         if (light.type != "directional")
@@ -108,15 +119,6 @@ void DrawManager::renderScene() {
         }
         i++;
     }
-
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    // clear buffers
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // set the camera
-    glLoadIdentity();
-    gluLookAt(camX,camY,camZ,
-              instance->lx,instance->ly,instance->lz,
-              instance->ux,instance->uy,instance->uz);
 
     DrawManager::drawMyStuff(instance->rootGroup.front());
 
@@ -328,6 +330,8 @@ void DrawManager::drawMyStuff(Group& rootGroup)
             glBindBuffer(GL_ARRAY_BUFFER, model.texIDBuffer);
             glTexCoordPointer(2, GL_FLOAT, 0, nullptr);
             glBindTexture(GL_TEXTURE_2D, model.texIDIL);
+
+
         }
 
         int diff[4] = {model.color.diffuse[0], model.color.diffuse[1], model.color.diffuse[2], 1};
@@ -538,6 +542,7 @@ void DrawManager::Draw() {
     glEnable(GL_DEPTH_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
     glEnable(GL_LIGHTING);
+    glEnable(GL_RESCALE_NORMAL);
     initLighting();
     glutMainLoop();
 }

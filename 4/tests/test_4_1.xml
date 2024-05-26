@@ -8,7 +8,7 @@
     </camera>
 	
 	<lights> 
-		<light type="directional" dirx="1" diry="0.7" dirz="0.5"/>
+		<light type="directional" dirX="1" dirY="0.7" dirZ="0.5"/>
 	</lights>
 	<group> 
   		<models> 

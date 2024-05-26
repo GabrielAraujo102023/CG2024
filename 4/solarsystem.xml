@@ -182,18 +182,23 @@
                 <scale x="1.1" y="1.1" z="1.1" />
                 <rotate time="9.9" x="0" y="1" z="0" />
             </transform>
-            <models>
-                <model file="planet.3d">
-                    <texture file="jupiter.jpg" />
-                    <color>
-                        <diffuse R="200" G="200" B="200" />
-                        <ambient R="50" G="50" B="50" />
-                        <specular R="0" G="0" B="0" />
-                        <emissive R="0" G="0" B="0" />
-                        <shininess value="0" />
-                    </color>
-                </model>
-            </models>
+            <group>
+                <transform>
+                    <rotate angle="-90" x="1" y="0" z="0" />
+                </transform>
+                <models>
+                    <model file="planet.3d">
+                        <texture file="jupiter.jpg" />
+                        <color>
+                            <diffuse R="200" G="200" B="200" />
+                            <ambient R="50" G="50" B="50" />
+                            <specular R="0" G="0" B="0" />
+                            <emissive R="0" G="0" B="0" />
+                            <shininess value="0" />
+                        </color>
+                    </model>
+                </models>
+            </group>
         </group>
 
         <!-- Saturno -->
@@ -208,18 +213,23 @@
                 <scale x="0.9" y="0.9" z="0.9" />
                 <rotate time="10.7" x="0" y="1" z="0" />
             </transform>
-            <models>
-                <model file="planet.3d">
-                    <texture file="saturn.jpg" />
-                    <color>
-                        <diffuse R="200" G="200" B="200" />
-                        <ambient R="50" G="50" B="50" />
-                        <specular R="0" G="0" B="0" />
-                        <emissive R="0" G="0" B="0" />
-                        <shininess value="0" />
-                    </color>
-                </model>
-            </models>
+            <group>
+                <transform>
+                    <rotate angle="-90" x="1" y="0" z="0" />
+                </transform>
+                <models>
+                    <model file="planet.3d">
+                        <texture file="saturn.jpg" />
+                        <color>
+                            <diffuse R="200" G="200" B="200" />
+                            <ambient R="50" G="50" B="50" />
+                            <specular R="0" G="0" B="0" />
+                            <emissive R="0" G="0" B="0" />
+                            <shininess value="0" />
+                        </color>
+                    </model>
+                </models>
+            </group>
             <!-- Aneis de Saturno -->
             <group>
                 <transform>
